@@ -1,0 +1,33 @@
+# Data is never committed: it is reproducibly fetched and checksum-verified.
+data/raw/*
+data/interim/*
+data/processed/*
+!data/**/.gitkeep
+
+# Generated artefacts are reproducible via `make reproduce`.
+reports/figures/*
+reports/metrics/*
+!reports/**/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Notebooks are exploration only; outputs are noise in diffs.
+.ipynb_checkpoints/
+
+# OS / editor / tooling
+.DS_Store
+.vscode/
+.idea/
+.claude/settings.local.json

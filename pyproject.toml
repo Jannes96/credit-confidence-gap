@@ -1,0 +1,62 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "credit-trust-lab"
+version = "0.1.0"
+description = "When does an explanation make a human trust a model it should not trust?"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Jannes Wilkesmann" }]
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.1",
+    "scikit-learn>=1.4",
+    "matplotlib>=3.8",
+    # Step 2. Both baselines admit exact Shapley values (LinearExplainer,
+    # TreeExplainer), so this buys exactness rather than an approximation.
+    "shap>=0.46",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "ruff>=0.6",
+    "mypy>=1.11",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+credit_trust_lab = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+markers = [
+    "integration: requires the downloaded raw dataset (deselect with '-m \"not integration\"')",
+]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ANN", "D"]
+ignore = ["D203", "D213", "ANN401"]
+
+[tool.ruff.lint.per-file-ignores]
+# Test functions document themselves through their names, and their arguments
+# are pytest fixtures whose types are declared where the fixture is defined.
+"tests/*" = ["D103", "ANN"]
+
+[tool.mypy]
+python_version = "3.11"
+packages = ["credit_trust_lab"]
+disallow_untyped_defs = true
+warn_unused_ignores = true
+ignore_missing_imports = true
