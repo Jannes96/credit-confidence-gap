@@ -33,8 +33,9 @@ flowchart TB
         DATA["«package» data<br/><br/>download · codebook · loader<br/>splits · preprocess"]
         MOD["«package» models<br/><br/>base · logistic<br/>gradient_boosting · registry"]
         EVAL["«package» evaluation<br/><br/>discrimination · calibration<br/>costs · report"]
+        REC["«package» recalibration<br/><br/>base · methods · fitting"]
         PLT["«package» plots<br/><br/>figures"]
-        EXP["«package» explanation<br/><br/>step 2 — reserved"]
+        EXP["«package» explanation<br/><br/>shap_values · stability<br/>faithfulness"]
         APP["«package» app<br/><br/>step 3 — reserved"]
     end
 
@@ -51,11 +52,15 @@ flowchart TB
     SCR ==> EVAL
     SCR ==> PLT
 
-    EXP -.->|planned| MOD
+    EXP -.->|uses| MOD
+    REC -.->|uses| MOD
+    EVAL -.->|scores| REC
+    SCR ==> REC
+    SCR ==> EXP
     APP -.->|planned| EVAL
 
     classDef reserved stroke-dasharray:5 5,opacity:0.55
-    class EXP,APP reserved
+    class APP reserved
 ```
 
 Two details the diagram makes visible:

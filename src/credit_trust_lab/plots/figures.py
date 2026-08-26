@@ -21,6 +21,9 @@ import numpy as np  # noqa: E402
 from credit_trust_lab.evaluation.calibration import CalibrationMetrics, TrustGapRow  # noqa: E402
 from credit_trust_lab.evaluation.costs import ThresholdResult, cost_curve  # noqa: E402
 from credit_trust_lab.evaluation.discrimination import pr_curve_data, roc_curve_data  # noqa: E402
+from credit_trust_lab.evaluation.report import ModelEvaluation  # noqa: E402
+from credit_trust_lab.explanation.faithfulness import FaithfulnessReport  # noqa: E402
+from credit_trust_lab.explanation.stability import StabilityReport  # noqa: E402
 
 FIGURE_SIZE = (7.0, 5.0)
 DPI = 150
@@ -323,5 +326,180 @@ def plot_stability(
         ax.set_title(metric, fontsize=10)
         ax.tick_params(axis="x", labelrotation=15, labelsize=8)
         ax.grid(alpha=0.3, axis="y")
+    fig.suptitle(title, fontsize=11)
+    return _save(fig, path)
+
+
+def plot_recalibration(
+    recalibrated: dict[str, Sequence[ModelEvaluation]],
+    path: Path,
+    *,
+    title: str = "Does recalibration move ECE beyond the measurement floor?",
+) -> Path:
+    """Compare each calibration map against its own noise floor.
+
+    Every method gets its *own* null interval, drawn as a grey range behind its
+    bar. They are not interchangeable: isotonic regression collapses the score
+    into a few dozen levels, which changes the bin occupancy and therefore
+    lowers its floor considerably. Averaging the intervals into one band — the
+    obvious shortcut — would compare each method against a threshold that
+    belongs to a different method.
+
+    A bar inside its own range has not been shown to be miscalibrated, so a
+    shorter bar there is not an improvement but a different draw.
+
+    Args:
+        recalibrated: Evaluations per base model, one per calibration method.
+        path: Destination file.
+        title: Figure title.
+
+    Returns:
+        The path written.
+
+    """
+    n_models = len(recalibrated)
+    fig, axes = plt.subplots(1, n_models, figsize=(5.8 * n_models, 4.8), squeeze=False)
+
+    for ax, (base_name, variants) in zip(axes[0], recalibrated.items(), strict=True):
+        methods = [v.model_name.split("+", 1)[1] for v in variants]
+        values = [v.test_partition.calibration.expected_calibration_error for v in variants]
+        nulls = [v.test_calibration_null["expected_calibration_error"] for v in variants]
+        positions = np.arange(len(methods))
+
+        ax.bar(positions, values, width=0.5, color="#3b6ea5", zorder=3, label="measured ECE")
+        for position, null in zip(positions, nulls, strict=True):
+            ax.add_patch(
+                plt.Rectangle(
+                    (position - 0.34, null.null_lower),
+                    0.68,
+                    null.null_upper - null.null_lower,
+                    facecolor="grey",
+                    alpha=0.25,
+                    zorder=1,
+                )
+            )
+            ax.plot(
+                [position - 0.34, position + 0.34],
+                [null.null_median, null.null_median],
+                color="dimgrey",
+                linestyle="--",
+                linewidth=1,
+                zorder=2,
+            )
+        for position, value in zip(positions, values, strict=True):
+            ax.annotate(
+                f"{value:.3f}", (position, value + 0.0015), ha="center", fontsize=8, zorder=4
+            )
+
+        # Proxy handles: the per-bar patches cannot carry their own legend entry.
+        ax.add_patch(
+            plt.Rectangle(
+                (0, 0), 0, 0, facecolor="grey", alpha=0.25, label="that method's own 90% null range"
+            )
+        )
+        ax.plot([], [], color="dimgrey", linestyle="--", linewidth=1, label="its null median")
+
+        ax.set_xticks(positions)
+        ax.set_xticklabels(methods)
+        ax.set_ylim(0, max(max(values), max(n.null_upper for n in nulls)) * 1.35)
+        ax.set_ylabel("Expected calibration error (test)")
+        ax.set_title(base_name, fontsize=10)
+        ax.legend(loc="upper center", fontsize=7, ncol=1)
+        ax.grid(alpha=0.3, axis="y", zorder=0)
+
+    fig.suptitle(title, fontsize=11)
+    return _save(fig, path)
+
+
+def plot_explanation_checks(
+    stability: dict[str, StabilityReport],
+    faithfulness: dict[str, FaithfulnessReport],
+    path: Path,
+    *,
+    title: str = "Can the explanation be believed?",
+) -> Path:
+    """Show stability against its chance floor, and faithfulness against random masking.
+
+    Two panels because the two properties fail independently. An explanation can
+    be faithful to a model whose reasoning is itself an artefact of the sample,
+    which is the most misleading combination and the one this project expects to
+    find.
+
+    Args:
+        stability: Stability reports keyed by model name.
+        faithfulness: Faithfulness reports keyed by model name.
+        path: Destination file.
+        title: Figure title.
+
+    Returns:
+        The path written.
+
+    """
+    names = list(stability)
+    fig, axes = plt.subplots(1, 2, figsize=(12.0, 4.8))
+    positions = np.arange(len(names))
+    width = 0.38
+
+    left = axes[0]
+    left.bar(
+        positions - width / 2,
+        [stability[n].top_k_jaccard for n in names],
+        width,
+        label="measured top-k overlap",
+        color="#3b6ea5",
+    )
+    left.bar(
+        positions + width / 2,
+        [stability[n].random_jaccard for n in names],
+        width,
+        label="chance level",
+        color="#b9c6d6",
+    )
+    for i, name in enumerate(names):
+        left.annotate(
+            f"top feature same\nin {stability[name].top_feature_agreement:.0%} of cases",
+            (i, stability[name].top_k_jaccard + 0.04),
+            ha="center",
+            fontsize=8,
+        )
+    left.axhline(1.0, color="green", linestyle="--", linewidth=1, label="fully reproducible")
+    left.set_ylim(0, 1.25)
+    left.set_xticks(positions)
+    left.set_xticklabels(names, fontsize=9)
+    left.set_ylabel("Top-k set overlap across bootstrap refits")
+    left.set_title("Stability — does the same explanation come back?", fontsize=10)
+    left.legend(loc="upper left", fontsize=8)
+    left.grid(alpha=0.3, axis="y")
+
+    right = axes[1]
+    right.bar(
+        positions - width / 2,
+        [faithfulness[n].top_k_effect for n in names],
+        width,
+        label="masking the named features",
+        color="#3b6ea5",
+    )
+    right.bar(
+        positions + width / 2,
+        [faithfulness[n].random_k_effect for n in names],
+        width,
+        label="masking random features",
+        color="#b9c6d6",
+    )
+    for i, name in enumerate(names):
+        right.annotate(
+            f"ratio {faithfulness[name].effect_ratio:.2f}",
+            (i, faithfulness[name].top_k_effect + 0.05),
+            ha="center",
+            fontsize=8,
+        )
+    right.set_ylim(0, max(faithfulness[n].top_k_effect for n in names) * 1.25)
+    right.set_xticks(positions)
+    right.set_xticklabels(names, fontsize=9)
+    right.set_ylabel("Mean absolute shift in log-odds")
+    right.set_title("Faithfulness — does the model respond to them?", fontsize=10)
+    right.legend(loc="upper left", fontsize=8)
+    right.grid(alpha=0.3, axis="y")
+
     fig.suptitle(title, fontsize=11)
     return _save(fig, path)

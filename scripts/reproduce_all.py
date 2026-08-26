@@ -25,17 +25,120 @@ from credit_trust_lab import __version__
 from credit_trust_lab.config import FIGURES_DIR, METRICS_DIR, Config
 from credit_trust_lab.data.download import DATA_SHA256, DATASET_URL, download_raw
 from credit_trust_lab.data.loader import data_card, load_dataset
-from credit_trust_lab.data.splits import make_splits
+from credit_trust_lab.data.splits import DataSplits, make_splits
 from credit_trust_lab.evaluation.calibration import calibration_metrics
 from credit_trust_lab.evaluation.discrimination import discrimination_metrics
 from credit_trust_lab.evaluation.report import ModelEvaluation, evaluate_model, write_json
+from credit_trust_lab.explanation import (
+    FaithfulnessReport,
+    StabilityReport,
+    additivity_error,
+    assess_faithfulness,
+    assess_stability,
+    explain,
+)
+from credit_trust_lab.models.base import CreditModel
 from credit_trust_lab.models.registry import build_all_models
 from credit_trust_lab.plots import figures
+from credit_trust_lab.recalibration import FittedCalibration, fit_calibration
 
 
 def _print_header(text: str) -> None:
     """Print a section header."""
     print(f"\n{text}\n{'-' * len(text)}")
+
+
+def run_recalibration(
+    models: list[CreditModel], splits: DataSplits, config: Config
+) -> dict[str, list[tuple[FittedCalibration, ModelEvaluation]]]:
+    """Fit and evaluate every calibration map for every model.
+
+    The base models are already trained; only the probability maps are learned
+    here, on the calibration partition. Each variant is then evaluated through
+    the *same* ``evaluate_model`` used for raw models, so recalibrated and
+    uncalibrated results are directly comparable and no evaluation code had to
+    be adapted.
+
+    The out-of-fold probabilities are handed to ``evaluate_model`` explicitly.
+    Without that, the threshold would be chosen on calibration-partition
+    probabilities produced by a calibrator that had already seen those rows'
+    outcomes.
+
+    Args:
+        models: Fitted base models.
+        splits: The three partitions.
+        config: Full project configuration.
+
+    Returns:
+        Keyed by base-model name: the fitted calibration and its evaluation,
+        one pair per configured method, in configuration order (identity
+        first). The fitted object is kept because it carries
+        ``n_output_levels``, the resolution the score scale retained — a cost
+        of recalibration that no calibration metric reports.
+
+    """
+    results: dict[str, list[tuple[FittedCalibration, ModelEvaluation]]] = {}
+    for model in models:
+        variants: list[tuple[FittedCalibration, ModelEvaluation]] = []
+        for method in config.recalibration.methods:
+            fitted = fit_calibration(model, splits, method, config.recalibration)
+            variants.append(
+                (
+                    fitted,
+                    evaluate_model(
+                        fitted.calibrated_model,
+                        splits,
+                        config,
+                        fit=False,
+                        calibration_probabilities=fitted.out_of_fold_probabilities,
+                    ),
+                )
+            )
+        results[model.name] = variants
+    return results
+
+
+def run_explanations(
+    models: list[CreditModel], splits: DataSplits, config: Config
+) -> tuple[dict[str, StabilityReport], dict[str, FaithfulnessReport], dict[str, float]]:
+    """Explain the test cases and subject each explanation to both checks.
+
+    Args:
+        models: Fitted base models.
+        splits: The three partitions.
+        config: Full project configuration.
+
+    Returns:
+        Stability reports, faithfulness reports, and the SHAP additivity error
+        per model — the last as a wiring check: Shapley values must reconstruct
+        the model margin exactly, so anything above floating-point noise means
+        the explainer is attached to something other than the model.
+
+    """
+    background = splits.X_train.sample(
+        min(config.explanation.n_background, len(splits.X_train)),
+        random_state=config.explanation.random_state,
+    )
+    stability: dict[str, StabilityReport] = {}
+    faithfulness: dict[str, FaithfulnessReport] = {}
+    additivity: dict[str, float] = {}
+
+    for model in models:
+        attributions = explain(model, splits.X_test, background, config.explanation)
+        additivity[model.name] = additivity_error(model, splits.X_test, attributions)
+        stability[model.name] = assess_stability(
+            model.name,
+            attributions,
+            splits,
+            splits.X_test,
+            background,
+            config.explanation,
+            config.model,
+        )
+        faithfulness[model.name] = assess_faithfulness(
+            model, attributions, splits.X_test, splits.X_train, config.explanation
+        )
+    return stability, faithfulness, additivity
 
 
 def run_stability(config: Config) -> dict[str, dict[str, list[float]]]:
@@ -141,9 +244,10 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     _print_header("3. Fit and evaluate")
-    evaluations = [
-        evaluate_model(model, splits, config) for model in build_all_models(config.model)
-    ]
+    models = build_all_models(config.model)
+    for model in models:
+        model.fit(splits.X_train, splits.y_train)
+    evaluations = [evaluate_model(model, splits, config, fit=False) for model in models]
     print(_summarise(evaluations))
     print(
         f"\nTheoretical threshold under {config.cost.cost_false_negative:.0f}:"
@@ -151,12 +255,73 @@ def main(argv: list[str] | None = None) -> int:
         f"{evaluations[0].threshold.theoretical_threshold:.3f}"
     )
     for evaluation in evaluations:
+        gap_null = evaluation.threshold_gap_null
         print(
             f"  {evaluation.model_name:<22} empirical {evaluation.threshold.threshold:.3f}  "
-            f"gap {evaluation.threshold.threshold_gap:+.3f}"
+            f"gap {evaluation.threshold.threshold_gap:+.3f}  "
+            f"(null 90% [{gap_null.null_lower:+.3f}, {gap_null.null_upper:+.3f}], "
+            f"{'outside' if gap_null.is_distinguishable else 'within'} noise)"
         )
 
-    _print_header("4. Figures")
+    _print_header("4. Is any of that distinguishable from noise?")
+    print(
+        "Each metric against what a perfectly calibrated model would score on\n"
+        f"{len(splits.X_test)} rows with the same score distribution.\n"
+    )
+    print(f"{'model':<22}{'metric':<30}{'observed':<11}{'null median':<13}{'verdict'}")
+    print("-" * 88)
+    for evaluation in evaluations:
+        for name, comparison in evaluation.test_calibration_null.items():
+            verdict = "measurable" if comparison.is_distinguishable else "indistinguishable"
+            print(
+                f"{evaluation.model_name:<22}{name:<30}"
+                f"{comparison.observed:<11.3f}{comparison.null_median:<13.3f}{verdict}"
+            )
+
+    _print_header("5. Recalibration (step 2)")
+    recalibrated = run_recalibration(models, splits, config)
+    print(
+        f"{'model':<22}{'method':<11}{'ECE':<8}{'null med':<10}{'Brier':<8}"
+        f"{'thr':<7}{'cost/case':<11}{'levels':<8}{'verdict'}"
+    )
+    print("-" * 100)
+    for base_name, variants in recalibrated.items():
+        for fitted, variant in variants:
+            null = variant.test_calibration_null["expected_calibration_error"]
+            verdict = "measurable" if null.is_distinguishable else "indistinguishable"
+            method = variant.model_name.split("+", 1)[1]
+            print(
+                f"{base_name:<22}{method:<11}"
+                f"{variant.test_partition.calibration.expected_calibration_error:<8.3f}"
+                f"{null.null_median:<10.3f}"
+                f"{variant.test_partition.calibration.brier_score:<8.3f}"
+                f"{variant.threshold.threshold:<7.3f}"
+                f"{variant.test_cost_per_case:<11.3f}"
+                f"{fitted.n_output_levels:<8}{verdict}"
+            )
+    print(
+        "\nEvery map is monotone, so no applicant overtakes another. Identity and\n"
+        "Platt are strictly monotone and leave ROC-AUC untouched. Isotonic is a\n"
+        "step function: it merges distinct scores into ties, which discards\n"
+        "ranking resolution and moves ROC-AUC. The 'levels' column is what\n"
+        "survives of the score scale."
+    )
+
+    _print_header("6. Explanations (step 2)")
+    explanation_stability, explanation_faithfulness, additivity = run_explanations(
+        models, splits, config
+    )
+    print("SHAP additivity error (must be at floating-point noise):")
+    for name, error in additivity.items():
+        print(f"  {name:<22} {error:.2e}")
+    print("\nStability under bootstrap refits of the training partition:")
+    for report in explanation_stability.values():
+        print(f"  {report}")
+    print("\nFaithfulness — do the named features move the model more than random ones?")
+    for report in explanation_faithfulness.values():
+        print(f"  {report}")
+
+    _print_header("7. Figures")
     test_curves = {
         e.model_name: (e.test_partition.y_true, e.test_partition.y_prob) for e in evaluations
     }
@@ -186,8 +351,22 @@ def main(argv: list[str] | None = None) -> int:
         ),
     ]
 
+    written.append(
+        figures.plot_recalibration(
+            {base: [v for _, v in variants] for base, variants in recalibrated.items()},
+            args.figures_dir / "recalibration.png",
+        )
+    )
+    written.append(
+        figures.plot_explanation_checks(
+            explanation_stability,
+            explanation_faithfulness,
+            args.figures_dir / "explanation_checks.png",
+        )
+    )
+
     if not args.skip_stability:
-        _print_header("5. Stability across seeds")
+        _print_header("8. Stability across seeds")
         stability = run_stability(config)
         for metric, by_model in stability.items():
             for name, values in by_model.items():
@@ -200,7 +379,31 @@ def main(argv: list[str] | None = None) -> int:
         written.append(figures.plot_stability(stability, args.figures_dir / "stability.png"))
         write_json(stability, args.metrics_dir / "stability.json")
 
-    _print_header("6. Written artefacts")
+    write_json(
+        {
+            "recalibration": {
+                base: [
+                    variant.as_dict()
+                    | {
+                        "n_output_levels": fitted.n_output_levels,
+                        "n_input_levels": int(np.unique(fitted.raw_probabilities).size),
+                    }
+                    for fitted, variant in variants
+                ]
+                for base, variants in recalibrated.items()
+            },
+            "explanation_stability": {
+                name: report.as_dict() for name, report in explanation_stability.items()
+            },
+            "explanation_faithfulness": {
+                name: report.as_dict() for name, report in explanation_faithfulness.items()
+            },
+            "shap_additivity_error": additivity,
+        },
+        args.metrics_dir / "step2.json",
+    )
+
+    _print_header("9. Written artefacts")
     write_json(
         {
             "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),

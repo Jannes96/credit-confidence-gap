@@ -1,11 +1,17 @@
 """The calibrator interface, and the wrapper that makes it invisible downstream.
 
 A calibrator is a monotone map from stated probability to corrected
-probability, fitted on the calibration partition. Because it maps probabilities
-to probabilities and nothing else, it cannot change the *ranking* of applicants
-— ROC-AUC is invariant under it by construction. That is the point: it
-addresses honesty, not discrimination, and the evaluation layer will show
-exactly that separation.
+probability, fitted on the calibration partition. Monotonicity means no
+applicant can overtake another: the order is never inverted.
+
+That is weaker than "ROC-AUC is unchanged", and the difference matters.
+Identity and Platt scaling are *strictly* monotone, so they preserve ROC-AUC
+exactly. Isotonic regression is only weakly monotone — it is a step function,
+so it maps distinct scores onto identical values. Those ties destroy ranking
+resolution between the applicants they merge, and ROC-AUC moves as a result.
+On this data isotonic regression collapses 200 distinct calibration scores into
+roughly thirty levels, which is a real cost that an ECE comparison alone would
+never reveal.
 
 The wrapper is what lets the entire step 1 apparatus be reused unchanged. A
 :class:`CalibratedModel` exposes the same ``name`` / ``predict_proba_bad`` /

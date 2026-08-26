@@ -68,6 +68,18 @@ class FittedCalibration:
     raw_probabilities: np.ndarray
     n_folds: int
 
+    @property
+    def n_output_levels(self) -> int:
+        """Distinct probability values the map leaves on the calibration partition.
+
+        A step function such as isotonic regression merges applicants into
+        ties. Two applicants on the same level can no longer be ranked against
+        each other, which is a loss no calibration metric reports. Compare
+        against ``len(raw_probabilities)`` to see how much of the score scale
+        survived.
+        """
+        return int(np.unique(self.out_of_fold_probabilities).size)
+
 
 def cross_fitted_probabilities(
     raw_probabilities: np.ndarray,
@@ -206,6 +218,8 @@ def calibration_comparison_frame(results: list[FittedCalibration]) -> pd.DataFra
                 "max_abs_shift": float(shift.max()),
                 "mean_probability_before": float(result.raw_probabilities.mean()),
                 "mean_probability_after": float(result.out_of_fold_probabilities.mean()),
+                "n_output_levels": result.n_output_levels,
+                "n_input_levels": int(np.unique(result.raw_probabilities).size),
             }
         )
     return pd.DataFrame(rows)

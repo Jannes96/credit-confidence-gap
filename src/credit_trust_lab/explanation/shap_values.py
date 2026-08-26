@@ -122,6 +122,26 @@ def _design_matrix(model: CreditModel, X: pd.DataFrame) -> np.ndarray:
     return np.asarray(model.pipeline.named_steps["preprocess"].transform(X), dtype=float)
 
 
+def model_margin(model: CreditModel, X: pd.DataFrame) -> np.ndarray:
+    """Return the model's raw additive score, before the sigmoid.
+
+    The scale SHAP attributions live on, and therefore the scale every
+    explanation check must use. On the probability scale the sigmoid compresses
+    movement near 0 and 1, so identical model behaviour would register as a
+    weaker response for confident cases.
+
+    Args:
+        model: A fitted model.
+        X: Cases to score, in codebook form.
+
+    Returns:
+        Log-odds of P(bad credit), shape ``(n_samples,)``.
+
+    """
+    estimator = model.pipeline.named_steps["estimator"]
+    return np.asarray(estimator.decision_function(_design_matrix(model, X)), dtype=float).ravel()
+
+
 def explain(
     model: CreditModel,
     X_explain: pd.DataFrame,
@@ -151,6 +171,15 @@ def explain(
     """
     config = config or ExplanationConfig()
 
+    # Dispatch before touching the model, so an unsupported type fails with the
+    # explanation this project owes the reader rather than an AttributeError.
+    if not isinstance(model, LogisticScorecard | GradientBoostingScorer):
+        raise TypeError(
+            f"No exact SHAP explainer registered for {type(model).__name__}. "
+            "Add one rather than falling back to a sampling explainer, whose "
+            "noise would be indistinguishable from genuine instability."
+        )
+
     background = _design_matrix(model, X_background)
     explain_matrix = _design_matrix(model, X_explain)
     estimator = model.pipeline.named_steps["estimator"]
@@ -159,16 +188,10 @@ def explain(
         explainer = shap.LinearExplainer(estimator, background)
         raw = np.asarray(explainer.shap_values(explain_matrix), dtype=float)
         base_value = float(np.asarray(explainer.expected_value).ravel()[0])
-    elif isinstance(model, GradientBoostingScorer):
+    else:
         explainer = shap.TreeExplainer(estimator)
         raw = np.asarray(explainer.shap_values(explain_matrix), dtype=float)
         base_value = float(np.asarray(explainer.expected_value).ravel()[0])
-    else:
-        raise TypeError(
-            f"No exact SHAP explainer registered for {type(model).__name__}. "
-            "Add one rather than falling back to a sampling explainer, whose "
-            "noise would be indistinguishable from genuine instability."
-        )
 
     if raw.ndim == 3:  # some versions return (n_cases, n_columns, n_classes)
         raw = raw[:, :, -1]
@@ -204,11 +227,6 @@ def additivity_error(
         scale.
 
     """
-    estimator = model.pipeline.named_steps["estimator"]
-    design = _design_matrix(model, X_explain)
-    if hasattr(estimator, "decision_function"):
-        margin = np.asarray(estimator.decision_function(design), dtype=float).ravel()
-    else:  # gradient boosting exposes the raw additive score here
-        margin = np.asarray(estimator.decision_function(design), dtype=float).ravel()
+    margin = model_margin(model, X_explain)
     reconstructed = attributions.base_value + attributions.values.sum(axis=1)
     return float(np.max(np.abs(reconstructed - margin)))

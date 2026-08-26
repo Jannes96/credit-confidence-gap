@@ -1,11 +1,32 @@
-"""Explanation layer -- reserved for step 2, intentionally empty.
+"""Explanation layer: SHAP attributions and the two checks that qualify them.
 
-Planned contents: SHAP values for both models, a stability measure for those
-values across bootstrap refits, and a faithfulness check comparing the
-explanation's implied ranking against the model's own behaviour under
-perturbation.
-
-The interface this layer will consume already exists:
-``CreditModel.predict_proba_bad`` is the only hook an explainer needs, so
-nothing here requires changes to the model or data layers.
+Step 2 of the project. The order matters and is not arbitrary: an explanation
+is worth showing to a person only if it is *reproducible* (stability) and
+*describes what the model actually does* (faithfulness). Both are measured here
+before any explanation is put in front of a human in step 3.
 """
+
+from credit_trust_lab.explanation.faithfulness import (
+    FaithfulnessReport,
+    assess_faithfulness,
+    baseline_row,
+)
+from credit_trust_lab.explanation.shap_values import (
+    Attributions,
+    additivity_error,
+    explain,
+    model_margin,
+)
+from credit_trust_lab.explanation.stability import StabilityReport, assess_stability
+
+__all__ = [
+    "Attributions",
+    "FaithfulnessReport",
+    "StabilityReport",
+    "additivity_error",
+    "assess_faithfulness",
+    "assess_stability",
+    "baseline_row",
+    "explain",
+    "model_margin",
+]

@@ -18,6 +18,8 @@ dependencies = [
     # Step 2. Both baselines admit exact Shapley values (LinearExplainer,
     # TreeExplainer), so this buys exactness rather than an approximation.
     "shap>=0.46",
+    # Imported directly for Spearman rank correlation in explanation.stability.
+    "scipy>=1.11",
 ]
 
 [project.optional-dependencies]

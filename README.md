@@ -10,13 +10,12 @@ question once an explanation is placed next to the number.
 This is the applied continuation of my bachelor's thesis, *Transparency in
 Human-AI Decision-Making: Effects on Reliance and Performance*.
 
-> **Status: step 1 of 3 — foundation.** Data layer, two baseline models,
-> evaluation and cost-based thresholding are implemented and tested.
-> Recalibration, SHAP explanations and the demo interface are not yet built;
-> the structure reserves a place for each (`src/credit_trust_lab/explanation/`,
-> `src/credit_trust_lab/app/`).
+> **Status: steps 1–2 of 3.** Data layer, two baselines, calibration
+> measurement, cost-based thresholds, post-hoc recalibration and SHAP
+> explanations with stability and faithfulness checks are implemented and
+> tested. The demo interface is not yet built; the structure reserves a place
+> for it (`src/credit_trust_lab/app/`).
 
----
 
 ## The design commitment
 
@@ -75,10 +74,18 @@ src/credit_trust_lab/
 ├── evaluation/
 │   ├── discrimination.py ROC-AUC, PR-AUC, bootstrap intervals
 │   ├── calibration.py    Brier, ECE, reliability bins, trust-gap table
+│   ├── null_model.py     What perfect calibration would score at this n
 │   ├── costs.py          Cost matrix, threshold optimisation, sensitivity
 │   └── report.py         One record per model, serialisable
+├── recalibration/
+│   ├── base.py           Calibrator interface + the model wrapper
+│   ├── methods.py        Identity (control), Platt, isotonic
+│   └── fitting.py        Cross-fitted fit, so the threshold stays honest
+├── explanation/
+│   ├── shap_values.py    Exact SHAP, aggregated to codebook features
+│   ├── stability.py      Does the explanation survive resampling?
+│   └── faithfulness.py   Does the model actually respond to it?
 ├── plots/figures.py      Matplotlib figures, fed by metric objects only
-├── explanation/          reserved for step 2 (SHAP)
 └── app/                  reserved for step 3 (demo interface)
 
 scripts/reproduce_all.py  One command → every figure and number in reports/
@@ -91,10 +98,14 @@ diagrams — are in [`docs/architecture.md`](docs/architecture.md).
 
 **Why this split.** The dependency direction is one-way: `data → models →
 evaluation → plots`. Evaluation knows nothing about how a model was built,
-which is what lets both models be judged on identical terms and what will let
-the explanation layer attach without touching anything below it. The only hook
-an explainer or an interface needs is `CreditModel.predict_proba_bad`, which is
-already stable.
+which is what lets both models be judged on identical terms.
+
+Step 2 tested that claim and it held. A recalibrated model is not a
+`CreditModel` — it owns no preprocessing pipeline and cannot be fitted from raw
+features — but it satisfies the narrower `ScoringModel` protocol, so every
+metric, threshold routine and figure accepted it without a single change to the
+evaluation layer. The explanation modules likewise attach through
+`predict_proba_bad` and the fitted pipeline alone.
 
 **Notebooks are exploration only.** No result in `reports/` or in this README
 originates in a notebook. A notebook's output depends on the cell execution
@@ -151,38 +162,120 @@ swept from 1:1 to 20:1 and the resulting thresholds are reported alongside.
 ## Current results
 
 Seed 20240601, regenerate with `make reproduce`. Full output in
-`reports/metrics/results.json`.
+`reports/metrics/results.json` and `reports/metrics/step2.json`.
 
-| | ROC-AUC (95% CI) | PR-AUC | Brier | ECE | threshold | gap to t\* | cost/case |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Logistic regression | 0.820 [0.750, 0.884] | 0.701 | 0.146 | 0.057 | 0.339 | +0.172 | 0.530 |
-| Gradient boosting | 0.835 [0.769, 0.896] | 0.720 | 0.142 | 0.064 | 0.124 | −0.042 | 0.515 |
+### Every number against its own noise floor
 
-Three observations, all of which are the point of the exercise rather than
-incidental:
+The most consequential thing this project measures is not a model's ECE but
+what an ECE *can* mean on 200 test rows. Ten quantile bins leave 20
+observations each, so a perfectly calibrated model still scores an ECE around
+0.07 through sampling alone. Every calibration figure below is therefore
+reported against a parametric bootstrap under the null hypothesis of perfect
+calibration (`evaluation/null_model.py`).
 
-1. **The confidence intervals swallow the difference.** Gradient boosting leads
-   by 0.015 AUC; each interval is roughly 0.13 wide. Across 20 random splits
-   the medians reverse (logistic 0.808, boosting 0.783) with almost complete
-   overlap. On 1,000 rows, "the better model" is mostly a statement about the
-   split.
-2. **The cost-optimal threshold is far from 0.5 — and not well identified.**
-   Both models cost markedly less at their chosen threshold than at 0.5. But
-   the logistic model's empirical optimum sits at 0.339 for every cost ratio
-   from 1:1 to 5:1, because on 200 calibration rows the cost curve is a step
-   function with wide flat regions. The threshold is a decision made on thin
-   evidence, and the sensitivity figure shows it.
-3. **A low ECE does not mean the confidence is safe to act on.** The logistic
-   model's aggregate ECE is the better of the two, yet its threshold sits
-   0.172 above the value its own probabilities imply — a disagreement in
-   decision units that the aggregate number hides.
+| | ROC-AUC (95% CI) | PR-AUC | Brier | ECE | null median | verdict |
+| --- | --- | --- | --- | --- | --- | --- |
+| Logistic regression | 0.820 [0.750, 0.884] | 0.701 | 0.146 | 0.057 | 0.068 | indistinguishable |
+| Gradient boosting | 0.835 [0.769, 0.896] | 0.720 | 0.142 | 0.064 | 0.066 | indistinguishable |
 
-Figures in `reports/figures/`: `reliability.png`, `trust_gap.png`,
-`cost_curve.png`, `cost_ratio_sensitivity.png`, `stability.png`, `roc.png`,
+**Neither model is measurably miscalibrated.** Both ECE values sit *below* the
+median a perfectly calibrated model would produce here. Quoting either as
+evidence of miscalibration would be reading noise.
+
+### The decision, and what it costs
+
+| | threshold | defaults caught | good customers refused | cost/case | vs. 0.5 |
+| --- | --- | --- | --- | --- | --- |
+| Logistic regression | 0.339 | 45/60 = 75 % | 31/140 = 22 % | 0.530 | −36 % |
+| Gradient boosting | 0.124 | 55/60 = 92 % | 78/140 = 56 % | 0.515 | −44 % |
+
+The cost difference is 3 %. The operating points are not comparable at all:
+one lender refuses every fifth good customer, the other more than every
+second. The cost curve is flat across a wide band, so the matrix fixes far
+less of the decision than it appears to — something outside these data has to
+choose, and the sensitivity figure shows how much is at stake.
+
+### Where the aggregate metric misses something
+
+Under the 5:1 matrix a calibrated model should refuse at `t* = 0.167`. The
+logistic model's empirical optimum is 0.339, a gap of **+0.172** against a
+null 90 % range of [−0.065, +0.137] — outside the noise band, two-sided
+p ≈ 0.035. Gradient boosting's −0.042 (p ≈ 0.37) is noise.
+
+So for the logistic model the *aggregate* calibration metric shows nothing
+while the *decision-relevant* one does. That is the project's thesis in one
+line: a single summary number cannot answer whether a model's confidence is
+safe to act on. One caveat, since this project is about unwarranted
+confidence: this is one comparison among several reported here, and p ≈ 0.035
+is not a large margin.
+
+### Step 2a — recalibration changes nothing measurable
+
+Identity, Platt and isotonic maps fitted on the calibration partition, with
+the threshold chosen from **out-of-fold** probabilities so that it never sees
+rows the calibrator was fitted on.
+
+| model | method | ECE | its own null median | cost/case | surviving score levels |
+| --- | --- | --- | --- | --- | --- |
+| Logistic | identity | 0.057 | 0.068 | 0.530 | 200 |
+| Logistic | Platt | 0.057 | 0.069 | 0.530 | 200 |
+| Logistic | isotonic | 0.063 | 0.044 | 0.530 | **34** |
+| Boosting | identity | 0.064 | 0.066 | 0.515 | 200 |
+| Boosting | Platt | 0.066 | 0.068 | 0.530 | 200 |
+| Boosting | isotonic | 0.060 | 0.058 | 0.545 | **40** |
+
+Every variant sits inside its own noise band; no method achieved a measurable
+improvement. That is the expected outcome when the starting point was not
+measurably wrong, and it is why the identity control exists — without it,
+"isotonic improved boosting's ECE from 0.064 to 0.060" would look like a
+result.
+
+The last column is a cost no calibration metric reports. Isotonic regression
+is monotone but not injective: it collapses 200 distinct scores into 34, so
+applicants who were ranked become tied and can no longer be told apart. Platt
+scaling is strictly monotone and leaves ROC-AUC exactly unchanged; isotonic
+does not.
+
+### Step 2b — the explanations are faithful but unstable
+
+| | top-5 overlap across refits | chance | same top feature | faithfulness ratio | direction |
+| --- | --- | --- | --- | --- | --- |
+| Logistic regression | 0.60 | 0.14 | 67 % | 1.82 | 1.00 |
+| Gradient boosting | 0.56 | 0.14 | 54 % | 1.91 | 0.97 |
+
+SHAP additivity error is at floating-point noise (≤ 4e-15) for both, so the
+attributions are exact rather than approximate.
+
+**Faithfulness passes.** Masking the features an explanation names moves the
+model roughly 1.9 times as far as masking random ones, and the direction is
+right in 97–100 % of cases. The explanation does describe what the model does.
+
+**Stability does not.** Refit on a bootstrap resample of the same 600 training
+rows and the single most influential characteristic changes for a third of
+logistic cases and **nearly half** of boosting cases. Well above chance, far
+from reproducible.
+
+That combination is the finding. A caseworker shown "declined: checking
+account status, credit duration" receives a statement that is *true of this
+model* — and that would have named different characteristics had the bank
+sampled a different 600 customers. The explanation earns trust in the
+mechanism while concealing how arbitrary the mechanism is. This is the
+condition under which an explanation produces confidence it has not earned,
+which is the question the project set out to ask.
+
+### What it adds up to
+
+1. On 1,000 rows, "which model is better" is not answerable: the intervals
+   overlap and 20 seeds reverse the ranking (logistic 0.808, boosting 0.783).
+2. Moving the threshold off 0.5 is the one robustly valuable intervention.
+3. Calibration is not measurably broken, so recalibration cannot measurably
+   fix it — and isotonic regression costs ranking resolution to try.
+4. Explanations describe the model correctly and describe an arbitrary model.
+
+Figures in `reports/figures/`: `recalibration.png`, `explanation_checks.png`,
+`reliability.png`, `trust_gap.png`, `cost_curve.png`,
+`cost_ratio_sensitivity.png`, `stability.png`, `roc.png`,
 `precision_recall.png`.
-
----
-
 ## Limits of this project
 
 These are not disclaimers appended after the fact. They are the reason the
@@ -236,14 +329,21 @@ claim that either model is well specified for anything beyond this comparison.
 - **Step 1 (done).** Data layer with checksum verification and an executable
   codebook; three-way split; two baselines behind one interface; discrimination
   and calibration metrics; cost-derived thresholds; tests.
-- **Step 2.** Recalibration (Platt, isotonic) on the reserved calibration
-  partition, measured with the apparatus already in place. SHAP values for both
-  models, plus a stability measure for those values across bootstrap refits —
-  an explanation that changes under resampling should not be presented as an
-  account of the model's reasoning.
+- **Step 2 (done).** A null distribution for every calibration metric, which
+  turned out to change how step 1's own results must be read. Recalibration
+  (identity control, Platt, isotonic) on the reserved partition, with
+  cross-fitted threshold selection. Exact SHAP for both models, aggregated to
+  codebook features, with stability and faithfulness checks.
 - **Step 3.** A demo interface showing, per case, the score, the cost-derived
-  decision, the explanation, and what that level of confidence has historically
-  been worth. The last of these is what the guiding question is about.
+  decision, the explanation — and what that explanation has been *worth*: how
+  often a characteristic like this one survives a refit, and how far the stated
+  confidence has historically been from the truth. Step 2 produced exactly the
+  numbers that panel needs.
+
+**Open for step 3.** The trust-gap table currently rests on ~44 cases in the
+top confidence band, which is too few to separate signal from noise. Pooling
+the bands across the 20 stability seeds would give ~900 per band and is the
+cheapest available increase in statistical power.
 
 ## References
 

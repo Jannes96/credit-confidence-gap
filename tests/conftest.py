@@ -16,9 +16,16 @@ from credit_trust_lab.data.codebook import FEATURES, FeatureKind
 from credit_trust_lab.data.download import DATA_MEMBER
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def rng() -> np.random.Generator:
-    """Seeded random generator, so failures are reproducible."""
+    """Seeded random generator, so failures are reproducible.
+
+    Function-scoped on purpose. A session-scoped generator is consumed in
+    whatever order the tests happen to run, so a test can pass alone and fail
+    in a full run — the draws it sees depend on which tests ran first. A fresh
+    generator per test makes every test reproducible in isolation and immune to
+    ordering.
+    """
     return np.random.default_rng(1234)
 
 

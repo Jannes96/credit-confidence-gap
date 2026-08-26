@@ -87,11 +87,19 @@ class PlattCalibrator(Calibrator):
 class IsotonicCalibrator(Calibrator):
     """Isotonic regression: a free monotone step function.
 
-    Strictly more flexible than Platt scaling, and correspondingly more prone
-    to overfitting. On a 200-row calibration partition it can carve out steps
+    More flexible than Platt scaling, and correspondingly more prone to
+    overfitting. On a 200-row calibration partition it can carve out steps
     supported by a handful of observations, which is exactly the failure mode
     this project is built to notice — hence ``out_of_bounds="clip"`` and the
     identity control.
+
+    It also carries a cost that calibration metrics do not show. Being a step
+    function, it is monotone but not injective: distinct scores are mapped onto
+    identical values, so applicants who were ranked become tied. The number of
+    surviving levels is reported by
+    :attr:`~credit_trust_lab.recalibration.fitting.FittedCalibration.n_output_levels`,
+    because a scorecard that can no longer separate two applicants has lost
+    something whether or not its ECE improved.
     """
 
     name = "isotonic"
