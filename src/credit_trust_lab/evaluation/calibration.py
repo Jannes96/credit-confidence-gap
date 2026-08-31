@@ -20,11 +20,12 @@ probabilities must not be claimed from it.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 
 import numpy as np
 
-from credit_trust_lab.config import CalibrationConfig
+from credit_trust_lab.config import BootstrapConfig, CalibrationConfig
 
 
 @dataclass(frozen=True)
@@ -344,3 +345,147 @@ def trust_gap_table(
             )
         )
     return tuple(rows)
+
+
+@dataclass(frozen=True)
+class PooledTrustGapRow:
+    """One confidence band, pooled across repeated three-way splits.
+
+    The reason this exists: on a single split the top confidence band holds
+    roughly fifty cases, so a gap of five percentage points is about two and a
+    half cases — one standard error. That is a direction, not an observation,
+    and it is far too thin to put in front of a human as "at this confidence
+    the model has historically been wrong this often". Pooling the twenty
+    stability splits raises the band to several hundred cases.
+
+    The interval is deliberately **not** a binomial interval on the pooled
+    count. The splits overlap — the same original applicant appears in several
+    test partitions — so those cases are not independent and a binomial
+    interval would be too narrow. Instead the interval is a cluster bootstrap
+    that resamples whole *splits*, which respects the dependence and also
+    absorbs the variation from refitting the model on each split.
+
+    Attributes:
+        lower: Lower edge of the confidence band.
+        upper: Upper edge of the confidence band.
+        count: Total cases in the band across all splits.
+        n_sources: Splits that contributed a non-empty band.
+        mean_confidence: Count-weighted mean stated confidence.
+        accuracy: Count-weighted realised accuracy.
+        gap: ``mean_confidence - accuracy``.
+        gap_lower: Lower bound of the cluster-bootstrap interval on the gap.
+        gap_upper: Upper bound of that interval.
+        confidence_level: Nominal coverage of the interval.
+        per_source_gaps: The individual split-level gaps, ascending. Reported
+            because their spread is the honest picture of how much a single
+            split could have misled.
+
+    """
+
+    lower: float
+    upper: float
+    count: int
+    n_sources: int
+    mean_confidence: float
+    accuracy: float
+    gap: float
+    gap_lower: float
+    gap_upper: float
+    confidence_level: float
+    per_source_gaps: tuple[float, ...]
+
+    @property
+    def excludes_zero(self) -> bool:
+        """Whether the interval separates the gap from zero."""
+        return self.gap_lower > 0.0 or self.gap_upper < 0.0
+
+    def as_dict(self) -> dict[str, object]:
+        """Return a serialisable dictionary including the derived verdict."""
+        return asdict(self) | {"excludes_zero": self.excludes_zero}
+
+    def __str__(self) -> str:
+        """One-line summary suitable for console output."""
+        return (
+            f"{self.lower:.1f}-{self.upper:.1f}  n={self.count:>5}  "
+            f"stated {self.mean_confidence:.3f}  realised {self.accuracy:.3f}  "
+            f"gap {self.gap:+.3f} [{self.gap_lower:+.3f}, {self.gap_upper:+.3f}]"
+        )
+
+
+def weighted_band_gap(rows: Sequence[TrustGapRow]) -> tuple[float, float, float, int]:
+    """Combine trust-gap rows for one band into a count-weighted summary.
+
+    Public because :mod:`credit_trust_lab.evaluation.null_model` must pool its
+    simulated draws by exactly the same arithmetic that pooled the observed
+    value. Two implementations of this would be free to drift, and the
+    comparison between them would quietly stop meaning anything.
+
+    Args:
+        rows: Trust-gap rows for a single band, one per split.
+
+    Returns:
+        ``(mean_confidence, accuracy, gap, total_count)``, count-weighted.
+
+    """
+    total = sum(row.count for row in rows)
+    confidence = sum(row.count * row.mean_confidence for row in rows) / total
+    accuracy = sum(row.count * row.accuracy for row in rows) / total
+    return confidence, accuracy, confidence - accuracy, total
+
+
+def pool_trust_gap(
+    tables: Sequence[Sequence[TrustGapRow]],
+    config: BootstrapConfig | None = None,
+) -> tuple[PooledTrustGapRow, ...]:
+    """Combine trust-gap tables from repeated splits into one table.
+
+    Args:
+        tables: One trust-gap table per split.
+        config: Resample count, coverage and seed for the cluster bootstrap.
+
+    Returns:
+        One pooled row per occupied band, in ascending confidence order.
+
+    Raises:
+        ValueError: If no tables are supplied.
+
+    """
+    config = config or BootstrapConfig()
+    if not tables:
+        raise ValueError("Cannot pool an empty collection of trust-gap tables.")
+
+    by_band: dict[tuple[float, float], list[TrustGapRow]] = {}
+    for table in tables:
+        for row in table:
+            by_band.setdefault((row.lower, row.upper), []).append(row)
+
+    rng = np.random.default_rng(config.random_state)
+    alpha = (1.0 - config.confidence_level) / 2.0
+    pooled: list[PooledTrustGapRow] = []
+
+    for (lower, upper), rows in sorted(by_band.items()):
+        confidence, accuracy, gap, total = weighted_band_gap(rows)
+
+        # Cluster bootstrap: the resampling unit is a whole split, not a case.
+        indices = np.arange(len(rows))
+        draws = np.empty(config.n_resamples, dtype=float)
+        for i in range(config.n_resamples):
+            picked = [rows[j] for j in rng.choice(indices, size=indices.size, replace=True)]
+            draws[i] = weighted_band_gap(picked)[2]
+
+        pooled.append(
+            PooledTrustGapRow(
+                lower=lower,
+                upper=upper,
+                count=total,
+                n_sources=len(rows),
+                mean_confidence=confidence,
+                accuracy=accuracy,
+                gap=gap,
+                gap_lower=float(np.quantile(draws, alpha)),
+                gap_upper=float(np.quantile(draws, 1.0 - alpha)),
+                confidence_level=config.confidence_level,
+                per_source_gaps=tuple(sorted(row.gap for row in rows)),
+            )
+        )
+    return tuple(pooled)

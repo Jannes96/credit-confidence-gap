@@ -73,7 +73,7 @@ src/credit_trust_lab/
 │   └── registry.py
 ├── evaluation/
 │   ├── discrimination.py ROC-AUC, PR-AUC, bootstrap intervals
-│   ├── calibration.py    Brier, ECE, reliability bins, trust-gap table
+│   ├── calibration.py    Brier, ECE, reliability bins, trust gap + pooling
 │   ├── null_model.py     What perfect calibration would score at this n
 │   ├── costs.py          Cost matrix, threshold optimisation, sensitivity
 │   └── report.py         One record per model, serialisable
@@ -263,14 +263,62 @@ mechanism while concealing how arbitrary the mechanism is. This is the
 condition under which an explanation produces confidence it has not earned,
 which is the question the project set out to ask.
 
+### The headline: the trust gap, pooled across splits
+
+On a single split the top confidence band holds ~50 cases, so a five-point gap
+is about two cases — a direction, not a finding. Pooling the twenty stability
+splits raises each band to several hundred. The interval is a **cluster
+bootstrap over whole splits**, not a binomial interval on the pooled count: the
+splits overlap, so the cases are not independent and a binomial interval would
+be too narrow.
+
+| model | band | n | stated | realised | gap [95 % CI] | vs. null |
+| --- | --- | --- | --- | --- | --- | --- |
+| Logistic | 0.9–1.0 | 1018 | 94.4 % | 92.4 % | **+0.020** [+0.003, +0.037] | p = 0.013 |
+| Boosting | 0.8–0.9 | 910 | 85.2 % | 81.2 % | **+0.040** [+0.015, +0.064] | p = 0.001 |
+| Boosting | 0.9–1.0 | 1137 | 94.6 % | 91.3 % | **+0.033** [+0.015, +0.050] | p < 0.001 |
+
+Every lower band is indistinguishable from noise. Three of ten are not — and
+they are the **high-confidence** bands, the ones with the most cases and the
+ones where a human is least likely to check. Both models overstate their
+certainty precisely where that overstatement matters most.
+
+Two things this changes:
+
+- **The question is now answerable.** Steps 1 and 2 could only say "we cannot
+  measure it here". Pooling raised the resolution far enough that the answer
+  is a number: when this model says it is 95 % sure, it is right about 92 % of
+  the time, and that shortfall is larger than sampling noise.
+- **Gradient boosting is the worse offender** (+0.033 versus +0.020 in the top
+  band) despite having the marginally better aggregate ECE on the canonical
+  split. A third instance of the same pattern: the summary metric ranks the
+  models one way, the decision-relevant one ranks them the other.
+
+Caveat kept in view: ten bands were tested against 90 % null intervals, so one
+false positive would be unremarkable. Three, concentrated in the largest and
+highest bands rather than scattered, is a pattern rather than an accident —
+but it is a pattern in one dataset of a thousand 1970s loans.
+
+Figure: `reports/figures/trust_gap_pooled.png`. Numbers:
+`reports/metrics/trust_gap_pooled.json`.
+
 ### What it adds up to
 
 1. On 1,000 rows, "which model is better" is not answerable: the intervals
    overlap and 20 seeds reverse the ranking (logistic 0.808, boosting 0.783).
 2. Moving the threshold off 0.5 is the one robustly valuable intervention.
-3. Calibration is not measurably broken, so recalibration cannot measurably
-   fix it — and isotonic regression costs ranking resolution to try.
-4. Explanations describe the model correctly and describe an arbitrary model.
+3. Aggregate calibration is not measurably broken, so recalibration cannot
+   measurably fix it — and isotonic regression costs ranking resolution to try.
+4. But pooled across splits, both models *are* measurably overconfident in
+   their highest confidence bands. The aggregate metric missed what the
+   decision-relevant and the band-level ones both catch.
+5. Explanations describe the model correctly and describe an arbitrary model:
+   faithful at ratio ~1.9, yet the top-named characteristic changes for a
+   third to a half of cases under a refit.
+
+Taken together: a caseworker is shown a confidence that is overstated where it
+matters, next to a reason code that is true of a model another sample would
+not have produced. That is the condition the project set out to characterise.
 
 Figures in `reports/figures/`: `recalibration.png`, `explanation_checks.png`,
 `reliability.png`, `trust_gap.png`, `cost_curve.png`,
@@ -340,10 +388,10 @@ claim that either model is well specified for anything beyond this comparison.
   confidence has historically been from the truth. Step 2 produced exactly the
   numbers that panel needs.
 
-**Open for step 3.** The trust-gap table currently rests on ~44 cases in the
-top confidence band, which is too few to separate signal from noise. Pooling
-the bands across the 20 stability seeds would give ~900 per band and is the
-cheapest available increase in statistical power.
+**Done since:** the trust-gap bands are now pooled across the 20 stability
+splits, which raised the top band from ~44 to ~1,000 cases and turned the
+project's headline question from a direction into a measured answer. Step 3
+can show a number rather than a hint.
 
 ## References
 

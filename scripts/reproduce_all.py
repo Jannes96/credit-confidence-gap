@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import platform
 import sys
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -26,8 +27,15 @@ from credit_trust_lab.config import FIGURES_DIR, METRICS_DIR, Config
 from credit_trust_lab.data.download import DATA_SHA256, DATASET_URL, download_raw
 from credit_trust_lab.data.loader import data_card, load_dataset
 from credit_trust_lab.data.splits import DataSplits, make_splits
-from credit_trust_lab.evaluation.calibration import calibration_metrics
+from credit_trust_lab.evaluation.calibration import (
+    PooledTrustGapRow,
+    TrustGapRow,
+    calibration_metrics,
+    pool_trust_gap,
+    trust_gap_table,
+)
 from credit_trust_lab.evaluation.discrimination import discrimination_metrics
+from credit_trust_lab.evaluation.null_model import NullComparison, pooled_trust_gap_null
 from credit_trust_lab.evaluation.report import ModelEvaluation, evaluate_model, write_json
 from credit_trust_lab.explanation import (
     FaithfulnessReport,
@@ -141,7 +149,25 @@ def run_explanations(
     return stability, faithfulness, additivity
 
 
-def run_stability(config: Config) -> dict[str, dict[str, list[float]]]:
+@dataclass(frozen=True)
+class StabilitySweep:
+    """Everything the repeated-split run collects.
+
+    Attributes:
+        metrics: ``{metric_name: {model_name: [values across seeds]}}``.
+        trust_gap_tables: One trust-gap table per seed, per model.
+        test_probabilities: The test-partition probabilities per seed, per
+            model. Kept so the pooled table can be held against a null that
+            reproduces the same score distributions.
+
+    """
+
+    metrics: dict[str, dict[str, list[float]]]
+    trust_gap_tables: dict[str, list[tuple[TrustGapRow, ...]]]
+    test_probabilities: dict[str, list[np.ndarray]]
+
+
+def run_stability(config: Config) -> StabilitySweep:
     """Refit and re-evaluate across many random three-way splits.
 
     A single split of 1000 rows is one draw from a wide distribution. This run
@@ -149,19 +175,27 @@ def run_stability(config: Config) -> dict[str, dict[str, list[float]]]:
     judged against the noise of the split itself, rather than presented as a
     result.
 
+    It also carries the per-seed trust-gap tables, which is what makes the
+    project's headline question answerable at all. On one split the top
+    confidence band holds around fifty cases; pooled across twenty splits it
+    holds several hundred.
+
     Args:
         config: Full project configuration.
 
     Returns:
-        ``{metric_name: {model_name: [values across seeds]}}``.
+        The collected sweep.
 
     """
     X, y = load_dataset()
-    records: dict[str, dict[str, list[float]]] = {
+    metrics: dict[str, dict[str, list[float]]] = {
         "ROC-AUC (test)": {},
         "Brier score (test)": {},
         "ECE (test)": {},
     }
+    trust_gap_tables: dict[str, list[tuple[TrustGapRow, ...]]] = {}
+    test_probabilities: dict[str, list[np.ndarray]] = {}
+
     for seed in config.stability.seeds:
         splits = make_splits(X, y, config.split, random_state=seed)
         for model in build_all_models(config.model):
@@ -170,12 +204,47 @@ def run_stability(config: Config) -> dict[str, dict[str, list[float]]]:
             truth = np.asarray(splits.y_test)
             discrimination = discrimination_metrics(truth, probabilities)
             calibration = calibration_metrics(truth, probabilities, config.calibration)
-            records["ROC-AUC (test)"].setdefault(model.name, []).append(discrimination.roc_auc)
-            records["Brier score (test)"].setdefault(model.name, []).append(calibration.brier_score)
-            records["ECE (test)"].setdefault(model.name, []).append(
+            metrics["ROC-AUC (test)"].setdefault(model.name, []).append(discrimination.roc_auc)
+            metrics["Brier score (test)"].setdefault(model.name, []).append(calibration.brier_score)
+            metrics["ECE (test)"].setdefault(model.name, []).append(
                 calibration.expected_calibration_error
             )
-    return records
+            trust_gap_tables.setdefault(model.name, []).append(
+                trust_gap_table(truth, probabilities, config.calibration)
+            )
+            test_probabilities.setdefault(model.name, []).append(probabilities)
+
+    return StabilitySweep(
+        metrics=metrics,
+        trust_gap_tables=trust_gap_tables,
+        test_probabilities=test_probabilities,
+    )
+
+
+def pool_and_test_trust_gap(
+    sweep: StabilitySweep, config: Config
+) -> dict[str, tuple[tuple[PooledTrustGapRow, ...], dict[tuple[float, float], NullComparison]]]:
+    """Pool the per-seed trust-gap tables and hold each band against its null.
+
+    Args:
+        sweep: Output of :func:`run_stability`.
+        config: Full project configuration.
+
+    Returns:
+        Per model: the pooled rows and the matching null comparisons.
+
+    """
+    results = {}
+    for name, tables in sweep.trust_gap_tables.items():
+        pooled = pool_trust_gap(tables, config.bootstrap)
+        nulls = pooled_trust_gap_null(
+            pooled,
+            sweep.test_probabilities[name],
+            config.calibration,
+            config.null_model,
+        )
+        results[name] = (pooled, nulls)
+    return results
 
 
 def _summarise(evaluations: list[ModelEvaluation]) -> str:
@@ -367,8 +436,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if not args.skip_stability:
         _print_header("8. Stability across seeds")
-        stability = run_stability(config)
-        for metric, by_model in stability.items():
+        sweep = run_stability(config)
+        for metric, by_model in sweep.metrics.items():
             for name, values in by_model.items():
                 array = np.asarray(values)
                 print(
@@ -376,8 +445,44 @@ def main(argv: list[str] | None = None) -> int:
                     f"median {np.median(array):.3f}  "
                     f"range [{array.min():.3f}, {array.max():.3f}]"
                 )
-        written.append(figures.plot_stability(stability, args.figures_dir / "stability.png"))
-        write_json(stability, args.metrics_dir / "stability.json")
+        written.append(figures.plot_stability(sweep.metrics, args.figures_dir / "stability.png"))
+        write_json(sweep.metrics, args.metrics_dir / "stability.json")
+
+        _print_header("8b. Trust gap, pooled across the same splits")
+        print(
+            "The project's headline question. On one split the top band holds ~50\n"
+            "cases; pooled it holds several hundred. The interval is a cluster\n"
+            "bootstrap over whole splits, because the splits overlap and a binomial\n"
+            "interval on the pooled count would be too narrow.\n"
+        )
+        pooled_gap = pool_and_test_trust_gap(sweep, config)
+        for name, (rows, nulls) in pooled_gap.items():
+            print(f"  {name}")
+            for row in rows:
+                null = nulls.get((row.lower, row.upper))
+                verdict = (
+                    ("measurable" if null.is_distinguishable else "indistinguishable")
+                    if null
+                    else "no null"
+                )
+                print(f"    {row}  {verdict}")
+        written.append(
+            figures.plot_pooled_trust_gap(
+                {name: rows for name, (rows, _) in pooled_gap.items()},
+                {name: nulls for name, (_, nulls) in pooled_gap.items()},
+                args.figures_dir / "trust_gap_pooled.png",
+            )
+        )
+        write_json(
+            {
+                name: {
+                    "pooled": [row.as_dict() for row in rows],
+                    "null": {f"{lo:.1f}-{hi:.1f}": c.as_dict() for (lo, hi), c in nulls.items()},
+                }
+                for name, (rows, nulls) in pooled_gap.items()
+            },
+            args.metrics_dir / "trust_gap_pooled.json",
+        )
 
     write_json(
         {

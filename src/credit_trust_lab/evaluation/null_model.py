@@ -28,16 +28,20 @@ Discrimination answers that separately, which is why both are always reported.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass
 
 import numpy as np
 
 from credit_trust_lab.config import CalibrationConfig, NullModelConfig
 from credit_trust_lab.evaluation.calibration import (
+    PooledTrustGapRow,
+    TrustGapRow,
     brier_score,
     expected_calibration_error,
     maximum_calibration_error,
+    trust_gap_table,
+    weighted_band_gap,
 )
 from credit_trust_lab.evaluation.costs import CostConfig, optimise_threshold
 
@@ -248,3 +252,73 @@ def resolution_limit(
         config,
     )
     return float(np.quantile(draws, 0.95))
+
+
+def pooled_trust_gap_null(
+    observed: Sequence[PooledTrustGapRow],
+    probability_tables: Sequence[np.ndarray],
+    calibration_config: CalibrationConfig | None = None,
+    config: NullModelConfig | None = None,
+) -> dict[tuple[float, float], NullComparison]:
+    """Hold each pooled confidence band against perfect calibration.
+
+    Pooling raises the case count per band from roughly fifty to several
+    hundred, which lowers the noise floor — but does not remove it. Without
+    this comparison the pooled table would repeat, at a larger sample size,
+    exactly the error that made the step 1 ECE figures unreadable: a number
+    that looks like a measurement because it is precise.
+
+    The null preserves the pooled structure. Every draw regenerates outcomes
+    for *every* split from that split's own probabilities and pools the
+    resulting tables the same way the observed value was pooled, so the
+    overlap between splits is reproduced rather than assumed away.
+
+    Args:
+        observed: The pooled rows actually measured, from
+            :func:`~credit_trust_lab.evaluation.calibration.pool_trust_gap`.
+        probability_tables: Predicted P(bad credit) per split, in the same
+            order the observed tables were pooled in.
+        calibration_config: Supplies the confidence band edges. Must match the
+            configuration the observed table used.
+        config: Resample count and seed.
+
+    Returns:
+        One comparison per observed band, keyed by ``(lower, upper)``. Bands
+        the null never produced are omitted.
+
+    Raises:
+        ValueError: If no probability tables are supplied.
+
+    """
+    calibration_config = calibration_config or CalibrationConfig()
+    config = config or NullModelConfig()
+    if not probability_tables:
+        raise ValueError("Cannot build a null for an empty collection of splits.")
+
+    rng = np.random.default_rng(config.random_state)
+    per_band_draws: dict[tuple[float, float], list[float]] = {}
+
+    for _ in range(config.n_resamples):
+        grouped: dict[tuple[float, float], list[TrustGapRow]] = {}
+        for probabilities in probability_tables:
+            for row in trust_gap_table(
+                rng.binomial(1, probabilities), probabilities, calibration_config
+            ):
+                grouped.setdefault((row.lower, row.upper), []).append(row)
+        for band, rows in grouped.items():
+            per_band_draws.setdefault(band, []).append(weighted_band_gap(rows)[2])
+
+    comparisons: dict[tuple[float, float], NullComparison] = {}
+    for pooled_row in observed:
+        band = (pooled_row.lower, pooled_row.upper)
+        draws = per_band_draws.get(band)
+        if draws is None:
+            continue
+        comparisons[band] = _compare(
+            f"pooled_trust_gap_{band[0]:.1f}_{band[1]:.1f}",
+            pooled_row.gap,
+            np.asarray(draws),
+            pooled_row.count,
+            config,
+        )
+    return comparisons

@@ -18,9 +18,14 @@ matplotlib.use("Agg")  # Figures are written to disk, never shown interactively.
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
-from credit_trust_lab.evaluation.calibration import CalibrationMetrics, TrustGapRow  # noqa: E402
+from credit_trust_lab.evaluation.calibration import (  # noqa: E402
+    CalibrationMetrics,
+    PooledTrustGapRow,
+    TrustGapRow,
+)
 from credit_trust_lab.evaluation.costs import ThresholdResult, cost_curve  # noqa: E402
 from credit_trust_lab.evaluation.discrimination import pr_curve_data, roc_curve_data  # noqa: E402
+from credit_trust_lab.evaluation.null_model import NullComparison  # noqa: E402
 from credit_trust_lab.evaluation.report import ModelEvaluation  # noqa: E402
 from credit_trust_lab.explanation.faithfulness import FaithfulnessReport  # noqa: E402
 from credit_trust_lab.explanation.stability import StabilityReport  # noqa: E402
@@ -502,4 +507,100 @@ def plot_explanation_checks(
     right.grid(alpha=0.3, axis="y")
 
     fig.suptitle(title, fontsize=11)
+    return _save(fig, path)
+
+
+def plot_pooled_trust_gap(
+    pooled: dict[str, Sequence[PooledTrustGapRow]],
+    nulls: dict[str, dict[tuple[float, float], NullComparison]],
+    path: Path,
+    *,
+    title: str = "Stated confidence versus realised accuracy, pooled across 20 splits",
+) -> Path:
+    """Draw the gap per confidence band with its interval and its noise floor.
+
+    The project's headline figure. Three things have to be visible at once for
+    it to be read honestly: the gap itself, how precisely it is known (the
+    cluster-bootstrap interval), and how large a gap this measurement would
+    have produced with nothing wrong (the grey null band). A gap whose interval
+    overlaps the null band has not been shown.
+
+    Args:
+        pooled: Pooled rows per model.
+        nulls: Null comparisons per model, keyed by band.
+        path: Destination file.
+        title: Figure title.
+
+    Returns:
+        The path written.
+
+    """
+    n_models = len(pooled)
+    fig, axes = plt.subplots(1, n_models, figsize=(6.4 * n_models, 5.0), squeeze=False)
+
+    for ax, (name, rows) in zip(axes[0], pooled.items(), strict=True):
+        model_nulls = nulls.get(name, {})
+        positions = np.arange(len(rows))
+
+        for position, row in zip(positions, rows, strict=True):
+            null = model_nulls.get((row.lower, row.upper))
+            if null is not None:
+                ax.add_patch(
+                    plt.Rectangle(
+                        (position - 0.32, null.null_lower),
+                        0.64,
+                        null.null_upper - null.null_lower,
+                        facecolor="grey",
+                        alpha=0.25,
+                        zorder=1,
+                    )
+                )
+
+        gaps = np.array([row.gap for row in rows])
+        lower = gaps - np.array([row.gap_lower for row in rows])
+        upper = np.array([row.gap_upper for row in rows]) - gaps
+        ax.errorbar(
+            positions,
+            gaps,
+            yerr=np.vstack([lower, upper]),
+            fmt="o",
+            color="#3b6ea5",
+            capsize=5,
+            linewidth=1.6,
+            markersize=7,
+            zorder=3,
+            label="pooled gap, 95% cluster bootstrap",
+        )
+        ax.axhline(0.0, color="black", linewidth=1, zorder=2)
+        ax.add_patch(
+            plt.Rectangle(
+                (0, 0),
+                0,
+                0,
+                facecolor="grey",
+                alpha=0.25,
+                label="90% range if perfectly calibrated",
+            )
+        )
+
+        ax.set_xticks(positions)
+        ax.set_xticklabels(
+            [f"{row.lower:.1f}-{row.upper:.1f}\nn={row.count}" for row in rows], fontsize=8
+        )
+        ax.set_xlabel("Confidence band  max(p, 1-p)")
+        ax.set_ylabel("Stated confidence minus realised accuracy")
+        ax.set_title(name, fontsize=10)
+        ax.legend(loc="upper left", fontsize=8)
+        ax.grid(alpha=0.3, axis="y", zorder=0)
+
+    fig.suptitle(title, fontsize=11)
+    fig.text(
+        0.5,
+        0.005,
+        "Positive means the model claimed more certainty than it earned. "
+        "Splits overlap, so the interval is a cluster bootstrap over splits.",
+        ha="center",
+        fontsize=7,
+        style="italic",
+    )
     return _save(fig, path)
