@@ -5,7 +5,7 @@
 reader cannot tell whether that is an effect or the ordinary wobble of a metric
 measured on 200 rows. Every recalibration result in this project is reported
 against the identity map and against the null distribution from
-:mod:`credit_trust_lab.evaluation.null_model`.
+:mod:`credit_confidence_gap.evaluation.null_model`.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ import numpy as np
 from sklearn.isotonic import IsotonicRegression
 from sklearn.linear_model import LogisticRegression
 
-from credit_trust_lab.recalibration.base import Calibrator, logit
+from credit_confidence_gap.recalibration.base import Calibrator, logit
 
 
 class IdentityCalibrator(Calibrator):
@@ -97,7 +97,7 @@ class IsotonicCalibrator(Calibrator):
     function, it is monotone but not injective: distinct scores are mapped onto
     identical values, so applicants who were ranked become tied. The number of
     surviving levels is reported by
-    :attr:`~credit_trust_lab.recalibration.fitting.FittedCalibration.n_output_levels`,
+    :attr:`~credit_confidence_gap.recalibration.fitting.FittedCalibration.n_output_levels`,
     because a scorecard that can no longer separate two applicants has lost
     something whether or not its ECE improved.
     """

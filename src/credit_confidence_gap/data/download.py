@@ -16,7 +16,7 @@ import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 
-from credit_trust_lab.config import RAW_DIR
+from credit_confidence_gap.config import RAW_DIR
 
 DATASET_URL = "https://archive.ics.uci.edu/static/public/573/south+german+credit+update.zip"
 
@@ -42,7 +42,7 @@ class RawDataset:
     Attributes:
         data_path: Whitespace-separated raw data file with a header row.
         codetable_path: Upstream coding table, kept for provenance so the
-            codebook in :mod:`credit_trust_lab.data.codebook` can be audited
+            codebook in :mod:`credit_confidence_gap.data.codebook` can be audited
             against its source.
 
     """
@@ -140,7 +140,7 @@ def download_raw(
 
 
 def main() -> None:
-    """Entry point for ``python -m credit_trust_lab.data.download``."""
+    """Entry point for ``python -m credit_confidence_gap.data.download``."""
     dataset = download_raw()
     print(f"Verified raw data: {dataset.data_path}")
     print(f"Verified codetable: {dataset.codetable_path}")

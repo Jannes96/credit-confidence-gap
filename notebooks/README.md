@@ -6,7 +6,7 @@ README, in `reports/`, or in any figure may originate here.
 The rule is not stylistic. A notebook's output depends on the order its cells
 happened to be executed in, which is not recorded, not diffable, and not
 reproducible from the file alone. Anything whose correctness matters therefore
-lives in `src/credit_trust_lab/`, is covered by a test, and is invoked from
+lives in `src/credit_confidence_gap/`, is covered by a test, and is invoked from
 `scripts/reproduce_all.py`.
 
 **Workflow:** explore here → once something is worth keeping, move it into

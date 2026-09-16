@@ -16,8 +16,8 @@ import numpy as np
 import pandas as pd
 from sklearn.pipeline import Pipeline
 
-from credit_trust_lab.config import ModelConfig
-from credit_trust_lab.data.preprocess import build_preprocessor, validate_frame
+from credit_confidence_gap.config import ModelConfig
+from credit_confidence_gap.data.preprocess import build_preprocessor, validate_frame
 
 
 class NotFittedError(RuntimeError):
@@ -74,7 +74,7 @@ class CreditModel(ABC):
 
         Args:
             config: Hyperparameters; defaults are taken from
-                :class:`~credit_trust_lab.config.ModelConfig`.
+                :class:`~credit_confidence_gap.config.ModelConfig`.
 
         """
         self.config = config or ModelConfig()

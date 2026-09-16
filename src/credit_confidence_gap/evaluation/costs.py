@@ -26,7 +26,7 @@ from dataclasses import asdict, dataclass
 
 import numpy as np
 
-from credit_trust_lab.config import CostConfig
+from credit_confidence_gap.config import CostConfig
 
 
 @dataclass(frozen=True)

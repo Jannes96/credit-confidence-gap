@@ -15,12 +15,12 @@ import numpy as np
 import pytest
 from sklearn.metrics import roc_auc_score
 
-from credit_trust_lab.config import Config, RecalibrationConfig
-from credit_trust_lab.data.splits import make_splits
-from credit_trust_lab.evaluation.calibration import expected_calibration_error
-from credit_trust_lab.models.base import ScoringModel
-from credit_trust_lab.models.registry import build_model
-from credit_trust_lab.recalibration import (
+from credit_confidence_gap.config import Config, RecalibrationConfig
+from credit_confidence_gap.data.splits import make_splits
+from credit_confidence_gap.evaluation.calibration import expected_calibration_error
+from credit_confidence_gap.models.base import ScoringModel
+from credit_confidence_gap.models.registry import build_model
+from credit_confidence_gap.recalibration import (
     CALIBRATOR_REGISTRY,
     CalibratedModel,
     IdentityCalibrator,
@@ -30,7 +30,7 @@ from credit_trust_lab.recalibration import (
     fit_all_calibrations,
     fit_calibration,
 )
-from credit_trust_lab.recalibration.base import NotFittedError, logit
+from credit_confidence_gap.recalibration.base import NotFittedError, logit
 
 # --------------------------------------------------------------------------
 # The maps themselves

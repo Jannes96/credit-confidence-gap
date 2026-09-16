@@ -38,11 +38,11 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold
 
-from credit_trust_lab.config import RecalibrationConfig
-from credit_trust_lab.data.splits import DataSplits
-from credit_trust_lab.models.base import CreditModel
-from credit_trust_lab.recalibration.base import CalibratedModel, Calibrator
-from credit_trust_lab.recalibration.methods import build_calibrator
+from credit_confidence_gap.config import RecalibrationConfig
+from credit_confidence_gap.data.splits import DataSplits
+from credit_confidence_gap.models.base import CreditModel
+from credit_confidence_gap.recalibration.base import CalibratedModel, Calibrator
+from credit_confidence_gap.recalibration.methods import build_calibrator
 
 
 @dataclass(frozen=True)

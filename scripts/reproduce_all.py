@@ -22,22 +22,22 @@ from pathlib import Path
 import numpy as np
 import sklearn
 
-from credit_trust_lab import __version__
-from credit_trust_lab.config import FIGURES_DIR, METRICS_DIR, Config
-from credit_trust_lab.data.download import DATA_SHA256, DATASET_URL, download_raw
-from credit_trust_lab.data.loader import data_card, load_dataset
-from credit_trust_lab.data.splits import DataSplits, make_splits
-from credit_trust_lab.evaluation.calibration import (
+from credit_confidence_gap import __version__
+from credit_confidence_gap.config import FIGURES_DIR, METRICS_DIR, Config
+from credit_confidence_gap.data.download import DATA_SHA256, DATASET_URL, download_raw
+from credit_confidence_gap.data.loader import data_card, load_dataset
+from credit_confidence_gap.data.splits import DataSplits, make_splits
+from credit_confidence_gap.evaluation.calibration import (
     PooledTrustGapRow,
     TrustGapRow,
     calibration_metrics,
     pool_trust_gap,
     trust_gap_table,
 )
-from credit_trust_lab.evaluation.discrimination import discrimination_metrics
-from credit_trust_lab.evaluation.null_model import NullComparison, pooled_trust_gap_null
-from credit_trust_lab.evaluation.report import ModelEvaluation, evaluate_model, write_json
-from credit_trust_lab.explanation import (
+from credit_confidence_gap.evaluation.discrimination import discrimination_metrics
+from credit_confidence_gap.evaluation.null_model import NullComparison, pooled_trust_gap_null
+from credit_confidence_gap.evaluation.report import ModelEvaluation, evaluate_model, write_json
+from credit_confidence_gap.explanation import (
     FaithfulnessReport,
     StabilityReport,
     additivity_error,
@@ -45,10 +45,10 @@ from credit_trust_lab.explanation import (
     assess_stability,
     explain,
 )
-from credit_trust_lab.models.base import CreditModel
-from credit_trust_lab.models.registry import build_all_models
-from credit_trust_lab.plots import figures
-from credit_trust_lab.recalibration import FittedCalibration, fit_calibration
+from credit_confidence_gap.models.base import CreditModel
+from credit_confidence_gap.models.registry import build_all_models
+from credit_confidence_gap.plots import figures
+from credit_confidence_gap.recalibration import FittedCalibration, fit_calibration
 
 
 def _print_header(text: str) -> None:

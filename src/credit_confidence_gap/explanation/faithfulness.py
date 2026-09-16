@@ -35,10 +35,10 @@ from dataclasses import asdict, dataclass
 import numpy as np
 import pandas as pd
 
-from credit_trust_lab.config import ExplanationConfig
-from credit_trust_lab.data.codebook import FEATURES, FeatureKind
-from credit_trust_lab.explanation.shap_values import Attributions, model_margin
-from credit_trust_lab.models.base import CreditModel
+from credit_confidence_gap.config import ExplanationConfig
+from credit_confidence_gap.data.codebook import FEATURES, FeatureKind
+from credit_confidence_gap.explanation.shap_values import Attributions, model_margin
+from credit_confidence_gap.models.base import CreditModel
 
 
 @dataclass(frozen=True)

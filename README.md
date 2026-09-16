@@ -1,4 +1,4 @@
-# credit-trust-lab
+# credit-confidence-gap
 
 **When does an explanation lead a human to trust a model it should not?**
 
@@ -14,7 +14,7 @@ Human-AI Decision-Making: Effects on Reliance and Performance*.
 > measurement, cost-based thresholds, post-hoc recalibration and SHAP
 > explanations with stability and faithfulness checks are implemented and
 > tested. The demo interface is not yet built; the structure reserves a place
-> for it (`src/credit_trust_lab/app/`).
+> for it (`src/credit_confidence_gap/app/`).
 
 
 ## The design commitment
@@ -58,7 +58,7 @@ make all        # everything, in the order CI would run it
 ## Repository structure
 
 ```
-src/credit_trust_lab/
+src/credit_confidence_gap/
 ├── config.py             All seeds, split fractions, costs and hyperparameters
 ├── data/
 │   ├── download.py       Fetch + SHA-256 verification of the raw archive

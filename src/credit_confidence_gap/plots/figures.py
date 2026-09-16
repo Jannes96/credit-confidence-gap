@@ -18,17 +18,20 @@ matplotlib.use("Agg")  # Figures are written to disk, never shown interactively.
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
-from credit_trust_lab.evaluation.calibration import (  # noqa: E402
+from credit_confidence_gap.evaluation.calibration import (  # noqa: E402
     CalibrationMetrics,
     PooledTrustGapRow,
     TrustGapRow,
 )
-from credit_trust_lab.evaluation.costs import ThresholdResult, cost_curve  # noqa: E402
-from credit_trust_lab.evaluation.discrimination import pr_curve_data, roc_curve_data  # noqa: E402
-from credit_trust_lab.evaluation.null_model import NullComparison  # noqa: E402
-from credit_trust_lab.evaluation.report import ModelEvaluation  # noqa: E402
-from credit_trust_lab.explanation.faithfulness import FaithfulnessReport  # noqa: E402
-from credit_trust_lab.explanation.stability import StabilityReport  # noqa: E402
+from credit_confidence_gap.evaluation.costs import ThresholdResult, cost_curve  # noqa: E402
+from credit_confidence_gap.evaluation.discrimination import (  # noqa: E402
+    pr_curve_data,
+    roc_curve_data,
+)
+from credit_confidence_gap.evaluation.null_model import NullComparison  # noqa: E402
+from credit_confidence_gap.evaluation.report import ModelEvaluation  # noqa: E402
+from credit_confidence_gap.explanation.faithfulness import FaithfulnessReport  # noqa: E402
+from credit_confidence_gap.explanation.stability import StabilityReport  # noqa: E402
 
 FIGURE_SIZE = (7.0, 5.0)
 DPI = 150

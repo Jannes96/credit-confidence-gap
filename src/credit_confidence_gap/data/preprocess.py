@@ -24,7 +24,12 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-from credit_trust_lab.data.codebook import FEATURES, FEATURES_BY_NAME, FeatureKind, feature_names
+from credit_confidence_gap.data.codebook import (
+    FEATURES,
+    FEATURES_BY_NAME,
+    FeatureKind,
+    feature_names,
+)
 
 
 def _one_hot_encoder(columns: list[str]) -> OneHotEncoder:

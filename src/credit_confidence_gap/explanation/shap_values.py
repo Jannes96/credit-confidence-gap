@@ -26,12 +26,12 @@ import numpy as np
 import pandas as pd
 import shap
 
-from credit_trust_lab.config import ExplanationConfig
-from credit_trust_lab.data.codebook import FEATURES
-from credit_trust_lab.data.preprocess import expected_feature_names
-from credit_trust_lab.models.base import CreditModel
-from credit_trust_lab.models.gradient_boosting import GradientBoostingScorer
-from credit_trust_lab.models.logistic import LogisticScorecard
+from credit_confidence_gap.config import ExplanationConfig
+from credit_confidence_gap.data.codebook import FEATURES
+from credit_confidence_gap.data.preprocess import expected_feature_names
+from credit_confidence_gap.models.base import CreditModel
+from credit_confidence_gap.models.gradient_boosting import GradientBoostingScorer
+from credit_confidence_gap.models.logistic import LogisticScorecard
 
 
 @dataclass(frozen=True)

@@ -12,14 +12,14 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from credit_trust_lab.config import BootstrapConfig, CalibrationConfig, NullModelConfig
-from credit_trust_lab.evaluation.calibration import (
+from credit_confidence_gap.config import BootstrapConfig, CalibrationConfig, NullModelConfig
+from credit_confidence_gap.evaluation.calibration import (
     TrustGapRow,
     pool_trust_gap,
     trust_gap_table,
     weighted_band_gap,
 )
-from credit_trust_lab.evaluation.null_model import pooled_trust_gap_null
+from credit_confidence_gap.evaluation.null_model import pooled_trust_gap_null
 
 FAST_BOOTSTRAP = BootstrapConfig(n_resamples=200, random_state=7)
 FAST_NULL = NullModelConfig(n_resamples=120, random_state=8)

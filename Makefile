@@ -16,7 +16,7 @@ $(BIN)/python:
 setup: $(BIN)/python  ## Create the virtualenv and install the package
 
 data: setup  ## Download and checksum-verify the raw dataset
-	$(BIN)/python -m credit_trust_lab.data.download
+	$(BIN)/python -m credit_confidence_gap.data.download
 
 test: setup  ## Run the test suite
 	$(BIN)/pytest

@@ -11,8 +11,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from credit_trust_lab.config import CalibrationConfig, NullModelConfig
-from credit_trust_lab.evaluation.null_model import (
+from credit_confidence_gap.config import CalibrationConfig, NullModelConfig
+from credit_confidence_gap.evaluation.null_model import (
     calibration_null_comparison,
     resolution_limit,
     threshold_gap_null_comparison,

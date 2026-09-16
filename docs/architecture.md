@@ -1,6 +1,6 @@
 # Architecture
 
-UML models of `credit-trust-lab`. Diagrams are Mermaid, so they render on
+UML models of `credit-confidence-gap`. Diagrams are Mermaid, so they render on
 GitHub and stay diffable — a PNG that silently drifts away from the code is
 worse than no diagram.
 
@@ -28,7 +28,7 @@ has no way of treating two models differently. It only ever sees two arrays,
 flowchart TB
     SCR["«script»<br/>scripts/reproduce_all.py"]
 
-    subgraph LIB["src/credit_trust_lab"]
+    subgraph LIB["src/credit_confidence_gap"]
         CFG["«package» config<br/><br/>SplitConfig · CostConfig<br/>CalibrationConfig · BootstrapConfig<br/>StabilityConfig · ModelConfig"]
         DATA["«package» data<br/><br/>download · codebook · loader<br/>splits · preprocess"]
         MOD["«package» models<br/><br/>base · logistic<br/>gradient_boosting · registry"]

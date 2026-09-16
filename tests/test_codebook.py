@@ -10,7 +10,7 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from credit_trust_lab.data.codebook import (
+from credit_confidence_gap.data.codebook import (
     FEATURES,
     FEATURES_BY_NAME,
     RAW_COLUMN_ORDER,

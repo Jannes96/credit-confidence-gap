@@ -1,4 +1,4 @@
-"""credit-trust-lab: studying when an explanation earns trust a model has not.
+"""credit-confidence-gap: studying when an explanation earns trust a model has not.
 
 See README.md for the guiding question and the limits of the dataset.
 """

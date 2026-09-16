@@ -17,33 +17,33 @@ from typing import Any
 import numpy as np
 from sklearn.metrics import average_precision_score, roc_auc_score
 
-from credit_trust_lab.config import Config
-from credit_trust_lab.data.splits import DataSplits
-from credit_trust_lab.evaluation.calibration import (
+from credit_confidence_gap.config import Config
+from credit_confidence_gap.data.splits import DataSplits
+from credit_confidence_gap.evaluation.calibration import (
     CalibrationMetrics,
     TrustGapRow,
     calibration_metrics,
     trust_gap_table,
 )
-from credit_trust_lab.evaluation.costs import (
+from credit_confidence_gap.evaluation.costs import (
     ThresholdResult,
     confusion_at,
     expected_cost,
     optimise_threshold,
     threshold_sensitivity,
 )
-from credit_trust_lab.evaluation.discrimination import (
+from credit_confidence_gap.evaluation.discrimination import (
     DiscriminationMetrics,
     Interval,
     bootstrap_interval,
     discrimination_metrics,
 )
-from credit_trust_lab.evaluation.null_model import (
+from credit_confidence_gap.evaluation.null_model import (
     NullComparison,
     calibration_null_comparison,
     threshold_gap_null_comparison,
 )
-from credit_trust_lab.models.base import CreditModel, ScoringModel
+from credit_confidence_gap.models.base import CreditModel, ScoringModel
 
 
 @dataclass(frozen=True)
@@ -170,7 +170,7 @@ def evaluate_model(
             the model here would return in-sample probabilities and the
             threshold would be tuned to a fit that does not generalise. Pass
             the out-of-fold probabilities from
-            :func:`~credit_trust_lab.recalibration.fitting.fit_calibration`
+            :func:`~credit_confidence_gap.recalibration.fitting.fit_calibration`
             instead.
 
     Returns:

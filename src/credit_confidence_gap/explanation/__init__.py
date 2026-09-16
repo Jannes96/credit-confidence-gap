@@ -6,18 +6,18 @@ is worth showing to a person only if it is *reproducible* (stability) and
 before any explanation is put in front of a human in step 3.
 """
 
-from credit_trust_lab.explanation.faithfulness import (
+from credit_confidence_gap.explanation.faithfulness import (
     FaithfulnessReport,
     assess_faithfulness,
     baseline_row,
 )
-from credit_trust_lab.explanation.shap_values import (
+from credit_confidence_gap.explanation.shap_values import (
     Attributions,
     additivity_error,
     explain,
     model_margin,
 )
-from credit_trust_lab.explanation.stability import StabilityReport, assess_stability
+from credit_confidence_gap.explanation.stability import StabilityReport, assess_stability
 
 __all__ = [
     "Attributions",

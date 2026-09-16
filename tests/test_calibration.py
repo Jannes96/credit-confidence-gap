@@ -10,8 +10,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from credit_trust_lab.config import CalibrationConfig
-from credit_trust_lab.evaluation.calibration import (
+from credit_confidence_gap.config import CalibrationConfig
+from credit_confidence_gap.evaluation.calibration import (
     brier_score,
     calibration_metrics,
     expected_calibration_error,

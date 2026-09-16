@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "credit-trust-lab"
+name = "credit-confidence-gap"
 version = "0.1.0"
 description = "When does an explanation make a human trust a model it should not trust?"
 readme = "README.md"
@@ -34,7 +34,7 @@ dev = [
 where = ["src"]
 
 [tool.setuptools.package-data]
-credit_trust_lab = ["py.typed"]
+credit_confidence_gap = ["py.typed"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -58,7 +58,7 @@ ignore = ["D203", "D213", "ANN401"]
 
 [tool.mypy]
 python_version = "3.11"
-packages = ["credit_trust_lab"]
+packages = ["credit_confidence_gap"]
 disallow_untyped_defs = true
 warn_unused_ignores = true
 ignore_missing_imports = true

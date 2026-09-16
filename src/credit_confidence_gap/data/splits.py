@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-from credit_trust_lab.config import SplitConfig
+from credit_confidence_gap.config import SplitConfig
 
 
 class SplitError(RuntimeError):

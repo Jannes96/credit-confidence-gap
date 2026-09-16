@@ -11,8 +11,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from credit_trust_lab.config import SplitConfig
-from credit_trust_lab.data.splits import SplitError, make_splits
+from credit_confidence_gap.config import SplitConfig
+from credit_confidence_gap.data.splits import SplitError, make_splits
 
 
 def test_partitions_are_pairwise_disjoint(synthetic_frame, synthetic_target):
@@ -106,7 +106,7 @@ def test_targets_follow_their_features(synthetic_frame, synthetic_target):
 
 
 def test_stability_seeds_are_deterministic():
-    from credit_trust_lab.config import StabilityConfig
+    from credit_confidence_gap.config import StabilityConfig
 
     config = StabilityConfig(n_repeats=5, base_random_state=100)
     assert config.seeds == (100, 101, 102, 103, 104)

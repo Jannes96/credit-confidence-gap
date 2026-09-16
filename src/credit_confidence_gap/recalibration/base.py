@@ -28,7 +28,7 @@ from typing import Self
 import numpy as np
 import pandas as pd
 
-from credit_trust_lab.models.base import CreditModel
+from credit_confidence_gap.models.base import CreditModel
 
 # Probabilities are clipped away from 0 and 1 before any logit transform.
 # Gradient boosting readily produces 1e-6 and 1 - 1e-6; without this, Platt
@@ -145,7 +145,7 @@ class Calibrator(ABC):
 class CalibratedModel:
     """A fitted model plus a fitted calibrator, behaving like a model.
 
-    Duck-types :class:`~credit_trust_lab.models.base.CreditModel` for the two
+    Duck-types :class:`~credit_confidence_gap.models.base.CreditModel` for the two
     operations the evaluation layer uses. It deliberately does **not** subclass
     it: a ``CreditModel`` owns a preprocessing pipeline and an estimator and
     knows how to fit itself from raw features, none of which applies here.

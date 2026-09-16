@@ -33,8 +33,8 @@ from dataclasses import asdict, dataclass
 
 import numpy as np
 
-from credit_trust_lab.config import CalibrationConfig, NullModelConfig
-from credit_trust_lab.evaluation.calibration import (
+from credit_confidence_gap.config import CalibrationConfig, NullModelConfig
+from credit_confidence_gap.evaluation.calibration import (
     PooledTrustGapRow,
     TrustGapRow,
     brier_score,
@@ -43,7 +43,7 @@ from credit_trust_lab.evaluation.calibration import (
     trust_gap_table,
     weighted_band_gap,
 )
-from credit_trust_lab.evaluation.costs import CostConfig, optimise_threshold
+from credit_confidence_gap.evaluation.costs import CostConfig, optimise_threshold
 
 
 @dataclass(frozen=True)
@@ -275,7 +275,7 @@ def pooled_trust_gap_null(
 
     Args:
         observed: The pooled rows actually measured, from
-            :func:`~credit_trust_lab.evaluation.calibration.pool_trust_gap`.
+            :func:`~credit_confidence_gap.evaluation.calibration.pool_trust_gap`.
         probability_tables: Predicted P(bad credit) per split, in the same
             order the observed tables were pooled in.
         calibration_config: Supplies the confidence band edges. Must match the

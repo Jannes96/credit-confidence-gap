@@ -3,7 +3,7 @@
 Reported first and weighted last. Discrimination is invariant to any monotone
 transformation of the score, which means a model can achieve an excellent AUC
 while its stated probabilities are systematically wrong. That gap is the
-subject of :mod:`credit_trust_lab.evaluation.calibration`; this module exists
+subject of :mod:`credit_confidence_gap.evaluation.calibration`; this module exists
 so the two can be shown side by side.
 """
 
@@ -20,7 +20,7 @@ from sklearn.metrics import (
     roc_curve,
 )
 
-from credit_trust_lab.config import BootstrapConfig
+from credit_confidence_gap.config import BootstrapConfig
 
 
 @dataclass(frozen=True)

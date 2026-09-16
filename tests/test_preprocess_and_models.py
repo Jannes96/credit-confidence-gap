@@ -5,18 +5,18 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from credit_trust_lab.config import Config, ModelConfig
-from credit_trust_lab.data.codebook import FEATURES_BY_NAME, FeatureKind, feature_names
-from credit_trust_lab.data.preprocess import (
+from credit_confidence_gap.config import Config, ModelConfig
+from credit_confidence_gap.data.codebook import FEATURES_BY_NAME, FeatureKind, feature_names
+from credit_confidence_gap.data.preprocess import (
     build_preprocessor,
     describe_design_matrix,
     expected_feature_names,
     validate_frame,
 )
-from credit_trust_lab.data.splits import make_splits
-from credit_trust_lab.evaluation.report import evaluate_model
-from credit_trust_lab.models.base import NotFittedError
-from credit_trust_lab.models.registry import MODEL_REGISTRY, build_all_models, build_model
+from credit_confidence_gap.data.splits import make_splits
+from credit_confidence_gap.evaluation.report import evaluate_model
+from credit_confidence_gap.models.base import NotFittedError
+from credit_confidence_gap.models.registry import MODEL_REGISTRY, build_all_models, build_model
 
 # --------------------------------------------------------------------------
 # Preprocessing
@@ -169,7 +169,7 @@ def test_threshold_is_fitted_on_calibration_and_applied_to_test(synthetic_frame,
     splits = make_splits(synthetic_frame, synthetic_target, config.split)
     evaluation = evaluate_model(build_model("logistic_regression", config.model), splits, config)
 
-    from credit_trust_lab.evaluation.costs import optimise_threshold
+    from credit_confidence_gap.evaluation.costs import optimise_threshold
 
     on_calibration = optimise_threshold(
         np.asarray(splits.y_calibration),

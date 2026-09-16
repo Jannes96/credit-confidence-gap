@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from sklearn.ensemble import GradientBoostingClassifier
 
-from credit_trust_lab.models.base import CreditModel
+from credit_confidence_gap.models.base import CreditModel
 
 
 class GradientBoostingScorer(CreditModel):

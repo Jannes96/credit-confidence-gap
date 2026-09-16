@@ -8,7 +8,7 @@ reason code is an artefact of sampling noise — and showing it to a caseworker
 manufactures exactly the unwarranted confidence this project studies.
 
 Nothing here asks whether the explanation is *correct*; that is the separate
-question handled in :mod:`credit_trust_lab.explanation.faithfulness`. This
+question handled in :mod:`credit_confidence_gap.explanation.faithfulness`. This
 module asks only whether it is *reproducible*, which is the weaker and more
 basic requirement. An explanation that fails here cannot pass there in any
 meaningful sense.
@@ -26,11 +26,11 @@ import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr
 
-from credit_trust_lab.config import ExplanationConfig, ModelConfig
-from credit_trust_lab.data.splits import DataSplits
-from credit_trust_lab.explanation.shap_values import Attributions, explain
-from credit_trust_lab.models.base import CreditModel
-from credit_trust_lab.models.registry import build_model
+from credit_confidence_gap.config import ExplanationConfig, ModelConfig
+from credit_confidence_gap.data.splits import DataSplits
+from credit_confidence_gap.explanation.shap_values import Attributions, explain
+from credit_confidence_gap.models.base import CreditModel
+from credit_confidence_gap.models.registry import build_model
 
 # Attributions below this magnitude (log-odds) are treated as "no claim made".
 # Their sign is arbitrary, so counting sign flips among them would report noise

@@ -11,9 +11,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from credit_trust_lab.config import RAW_DIR
-from credit_trust_lab.data.codebook import FEATURES, FeatureKind
-from credit_trust_lab.data.download import DATA_MEMBER
+from credit_confidence_gap.config import RAW_DIR
+from credit_confidence_gap.data.codebook import FEATURES, FeatureKind
+from credit_confidence_gap.data.download import DATA_MEMBER
 
 
 @pytest.fixture
@@ -68,6 +68,6 @@ def real_dataset() -> tuple[pd.DataFrame, pd.Series]:
     """Return the actual dataset, skipping the test when it has not been downloaded."""
     if not (RAW_DIR / DATA_MEMBER).exists():
         pytest.skip("Raw data absent; run `make data` to enable integration tests.")
-    from credit_trust_lab.data.loader import load_dataset
+    from credit_confidence_gap.data.loader import load_dataset
 
     return load_dataset()

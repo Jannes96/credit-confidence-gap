@@ -12,8 +12,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from credit_trust_lab.config import CostConfig
-from credit_trust_lab.evaluation.costs import (
+from credit_confidence_gap.config import CostConfig
+from credit_confidence_gap.evaluation.costs import (
     confusion_at,
     cost_curve,
     expected_cost,

@@ -6,14 +6,14 @@ from pathlib import Path
 
 import pandas as pd
 
-from credit_trust_lab.data.codebook import (
+from credit_confidence_gap.data.codebook import (
     FEATURES,
     RAW_COLUMN_ORDER,
     RENAME_MAP,
     TARGET,
     FeatureKind,
 )
-from credit_trust_lab.data.download import RawDataset, download_raw
+from credit_confidence_gap.data.download import RawDataset, download_raw
 
 EXPECTED_N_ROWS = 1000
 EXPECTED_N_BAD = 300

@@ -8,7 +8,7 @@ studying it.
 
 Recalibration itself (Platt scaling, isotonic regression) is deliberately *not*
 here yet — it belongs to the next step and will consume the calibration
-partition that :mod:`credit_trust_lab.data.splits` already reserves. What is
+partition that :mod:`credit_confidence_gap.data.splits` already reserves. What is
 here is the measurement apparatus those methods will be judged by.
 
 A standing caveat applies to every number this module produces. The sample is
@@ -25,7 +25,7 @@ from dataclasses import asdict, dataclass
 
 import numpy as np
 
-from credit_trust_lab.config import BootstrapConfig, CalibrationConfig
+from credit_confidence_gap.config import BootstrapConfig, CalibrationConfig
 
 
 @dataclass(frozen=True)
@@ -243,7 +243,7 @@ def maximum_calibration_error(
 
     Exposed as a standalone function, not only as a field of
     :class:`CalibrationMetrics`, so that
-    :mod:`credit_trust_lab.evaluation.null_model` can compute its null
+    :mod:`credit_confidence_gap.evaluation.null_model` can compute its null
     distribution through the same code path that produces the reported value.
 
     Args:
@@ -415,7 +415,7 @@ class PooledTrustGapRow:
 def weighted_band_gap(rows: Sequence[TrustGapRow]) -> tuple[float, float, float, int]:
     """Combine trust-gap rows for one band into a count-weighted summary.
 
-    Public because :mod:`credit_trust_lab.evaluation.null_model` must pool its
+    Public because :mod:`credit_confidence_gap.evaluation.null_model` must pool its
     simulated draws by exactly the same arithmetic that pooled the observed
     value. Two implementations of this would be free to drift, and the
     comparison between them would quietly stop meaning anything.

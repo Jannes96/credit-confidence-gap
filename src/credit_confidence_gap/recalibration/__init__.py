@@ -5,14 +5,14 @@ monotone, so ROC-AUC is unchanged by construction and only the calibration
 metrics can move.
 """
 
-from credit_trust_lab.recalibration.base import CalibratedModel, Calibrator
-from credit_trust_lab.recalibration.fitting import (
+from credit_confidence_gap.recalibration.base import CalibratedModel, Calibrator
+from credit_confidence_gap.recalibration.fitting import (
     FittedCalibration,
     cross_fitted_probabilities,
     fit_all_calibrations,
     fit_calibration,
 )
-from credit_trust_lab.recalibration.methods import (
+from credit_confidence_gap.recalibration.methods import (
     CALIBRATOR_REGISTRY,
     IdentityCalibrator,
     IsotonicCalibrator,

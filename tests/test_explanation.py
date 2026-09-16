@@ -11,10 +11,10 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from credit_trust_lab.config import Config, ExplanationConfig
-from credit_trust_lab.data.codebook import FEATURES, FeatureKind
-from credit_trust_lab.data.splits import make_splits
-from credit_trust_lab.explanation import (
+from credit_confidence_gap.config import Config, ExplanationConfig
+from credit_confidence_gap.data.codebook import FEATURES, FeatureKind
+from credit_confidence_gap.data.splits import make_splits
+from credit_confidence_gap.explanation import (
     additivity_error,
     assess_faithfulness,
     assess_stability,
@@ -22,8 +22,8 @@ from credit_trust_lab.explanation import (
     explain,
     model_margin,
 )
-from credit_trust_lab.explanation.stability import expected_random_jaccard
-from credit_trust_lab.models.registry import MODEL_REGISTRY, build_model
+from credit_confidence_gap.explanation.stability import expected_random_jaccard
+from credit_confidence_gap.models.registry import MODEL_REGISTRY, build_model
 
 FAST = ExplanationConfig(n_background=40, n_stability_refits=3, top_k=5, random_state=99)
 

@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 
-from credit_trust_lab.config import ModelConfig
-from credit_trust_lab.models.base import CreditModel
-from credit_trust_lab.models.gradient_boosting import GradientBoostingScorer
-from credit_trust_lab.models.logistic import LogisticScorecard
+from credit_confidence_gap.config import ModelConfig
+from credit_confidence_gap.models.base import CreditModel
+from credit_confidence_gap.models.gradient_boosting import GradientBoostingScorer
+from credit_confidence_gap.models.logistic import LogisticScorecard
 
 MODEL_REGISTRY: Mapping[str, Callable[[ModelConfig | None], CreditModel]] = {
     LogisticScorecard.name: LogisticScorecard,

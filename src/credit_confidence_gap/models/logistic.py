@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from sklearn.linear_model import LogisticRegression
 
-from credit_trust_lab.models.base import CreditModel
+from credit_confidence_gap.models.base import CreditModel
 
 
 class LogisticScorecard(CreditModel):
