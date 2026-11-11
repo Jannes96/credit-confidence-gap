@@ -17,6 +17,109 @@ Human-AI Decision-Making: Effects on Reliance and Performance*.
 > for it (`src/credit_confidence_gap/app/`).
 
 
+
+<details>
+<summary><b>In plain language — what this is, for readers outside the field</b></summary>
+
+### The starting point
+
+When software recommends a decision — *reject this loan application* — it
+usually shows a number beside it: *90 % confident*. Increasingly it also shows
+a reason: *because of account balance and loan duration*.
+
+Research is clear about what such reasons do to people: they **increase
+trust, but not selectively**. People go along with an explained system even
+when it is wrong. The explanation makes the output *plausible*, not *correct*.
+That was the subject of the bachelor's thesis behind this project. The
+follow-up question is: **when does an explanation lead someone to trust a
+model it does not deserve?**
+
+### Why the usual measure cannot answer that
+
+Picture a weather app. It forecasts "30 % chance of rain" on a hundred days.
+If it rains on about thirty of them, the number is honest. If it rains on
+sixty, it is not — **even if the app ranked the days perfectly**, putting the
+wetter ones correctly ahead of the drier ones.
+
+The industry's standard metric only measures the ranking. A thermometer that
+reads five degrees too high ranks days flawlessly and still reports wrong
+numbers. But a person reads the number, not the ranking. So this project
+inverts the usual priority: **honest numbers matter more than good ranking.**
+
+### What the program does
+
+One command runs the whole chain in about a minute: fetch the data and verify
+its fingerprint (several versions of this dataset circulate and one is
+miscoded); translate the raw integers using a coding table that lives in
+tested code rather than in a comment; split the data three ways — one part to
+learn from, one to tune on, one to be judged by, like an exam you are not
+allowed to practise on; fit two models; measure ranking and honesty
+separately; derive the decision threshold from what each kind of error
+actually costs; try to correct the probabilities afterwards; and finally
+generate explanations and put them on trial.
+
+### What came out
+
+**No detectable difference between the two models.** On one random split the
+stronger learner wins; repeat the split twenty times and the ranking reverses.
+On 1,000 cases, "the better model" is mostly a statement about luck.
+
+**The 50 % threshold is expensive.** Moving it to reflect real error costs cuts
+losses by 36–44 %. But two models with nearly identical costs behave entirely
+differently: one rejects 22 % of good customers, the other 56 %. The cost
+calculation pins down far less than it appears to.
+
+**The measuring instrument was too coarse — and that went unnoticed at first.**
+On 200 test cases, even a *perfectly honest* model shows an apparent dishonesty
+of about 6 percentage points through sheer chance. The measured values were 5.7
+and 6.4. Like a kitchen scale accurate to 5 grams: measuring a 3-gram
+difference with it measures nothing. Two figures previously written up as
+findings turned out not to be, and were corrected. It also follows that
+**correcting the probabilities achieves nothing measurable** — you cannot
+repair a fault you cannot demonstrate.
+
+**Pooling twenty repetitions makes the scale fine enough.** With ~1,000 cases
+instead of 44, the answer appears: when these models say they are **95 %
+sure**, they are right **91–92 %** of the time. The lower confidence ranges are
+fine. The overconfidence sits exactly where confidence is highest — which is
+exactly where a person is least likely to check.
+
+**The explanations are faithful but arbitrary.** Two separate tests. *Does the
+reason actually describe what the model responds to?* Yes — removing the named
+characteristics moves the prediction nearly twice as far as removing random
+ones, in the right direction. *Would the same reason come back if the bank held
+slightly different customer records?* No — retrain on a slightly different draw
+of the same data and the single most important named characteristic changes for
+a third to almost half of cases.
+
+### The finding that matters
+
+The expected danger is *the explanation is wrong*. But a wrong explanation
+eventually contradicts observation and gets caught. What this project found is
+more insidious:
+
+> **The explanation is correct — and the model behind it is arbitrary.**
+
+A caseworker reads "rejected because of account balance and duration". That is
+verifiably true of *this* model. It would have been a different reason had the
+bank happened to hold 600 other customers on file. The explanation builds trust
+in a mechanism while hiding how arbitrary that mechanism is — alongside a
+confidence figure that is overstated precisely in the critical range.
+
+The same standard applies inward. The noise-floor finding says a written-down
+metric can *look* like a measurement without being one: the same error, one
+level up, at the analyst's desk rather than the caseworker's.
+
+### What this is not
+
+Not a deployable credit system. The data are fifty years old, contain only
+people who actually received a loan (the model knows nothing about those
+refused), and over-represent defaults by design, so real default rates cannot
+be read off them. All of this is documented rather than smoothed over — the
+data are a test bed for the method, not a picture of reality.
+
+</details>
+
 ## The design commitment
 
 Every choice below follows from one decision: **calibration matters more than
