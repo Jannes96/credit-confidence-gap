@@ -21,6 +21,7 @@ PROCESSED_DIR: Path = DATA_DIR / "processed"
 REPORTS_DIR: Path = PROJECT_ROOT / "reports"
 FIGURES_DIR: Path = REPORTS_DIR / "figures"
 METRICS_DIR: Path = REPORTS_DIR / "metrics"
+APP_DIR: Path = REPORTS_DIR / "app"
 
 
 @dataclass(frozen=True)

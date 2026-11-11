@@ -153,8 +153,15 @@ make data       # download and checksum-verify the raw file only
 make test       # pytest
 make lint       # ruff check + format check
 make typecheck  # mypy
+make app        # regenerate, then open the single-case demo page
+make assets     # refresh the two figures this README embeds
 make all        # everything, in the order CI would run it
 ```
+
+`make reproduce` also writes `reports/app/index.html` — a single self-contained
+page showing one applicant's score, the cost-derived decision and the reason
+code, each printed beside the evidence from steps 1 and 2 about what that kind
+of assertion has been worth. `make app` opens it.
 
 ---
 
@@ -358,6 +365,11 @@ rows and the single most influential characteristic changes for a third of
 logistic cases and **nearly half** of boosting cases. Well above chance, far
 from reproducible.
 
+![Left: how often the same characteristics come back when the model is refit on
+a resample, against the overlap two random picks would give. Right: how far
+masking the named characteristics moves the model, against masking random
+ones.](docs/assets/explanation_checks.png)
+
 That combination is the finding. A caseworker shown "declined: checking
 account status, credit duration" receives a statement that is *true of this
 model* — and that would have named different characteristics had the bank
@@ -402,8 +414,15 @@ false positive would be unremarkable. Three, concentrated in the largest and
 highest bands rather than scattered, is a pattern rather than an accident —
 but it is a pattern in one dataset of a thousand 1970s loans.
 
-Figure: `reports/figures/trust_gap_pooled.png`. Numbers:
-`reports/metrics/trust_gap_pooled.json`.
+![Stated confidence against realised accuracy, pooled across 20 splits. The grey
+band is the range a perfectly calibrated model would produce at that sample
+size; it narrows as the bands grow. Only the high-confidence points sit outside
+it.](docs/assets/trust_gap_pooled.png)
+
+Read it as three things at once: the gap, how precisely it is known (the
+interval), and how large a gap this measurement would show with nothing wrong
+(the grey band). A point whose interval overlaps the grey has not been
+demonstrated. Numbers: `reports/metrics/trust_gap_pooled.json`.
 
 ### What it adds up to
 

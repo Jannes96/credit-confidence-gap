@@ -4,7 +4,10 @@ data/interim/*
 data/processed/*
 !data/**/.gitkeep
 
-# Generated artefacts are reproducible via `make reproduce`.
+# Generated artefacts are reproducible via `make reproduce` and stay out of
+# git. The two exceptions live in docs/assets/ and are copied there by
+# `make assets`: a README that renders nothing on GitHub is a README nobody
+# reads, and that is worth one narrow, explicit exception.
 reports/figures/*
 reports/metrics/*
 !reports/**/.gitkeep

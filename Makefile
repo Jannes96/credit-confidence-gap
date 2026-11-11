@@ -3,7 +3,7 @@ VENV := .venv
 BIN := $(VENV)/bin
 
 .DEFAULT_GOAL := help
-.PHONY: help setup data test lint typecheck reproduce all clean
+.PHONY: help setup data test lint typecheck reproduce assets app all clean
 
 help:  ## Show the available targets
 	@grep -E '^[a-z-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
@@ -28,8 +28,22 @@ lint: setup  ## Check formatting and lint rules
 typecheck: setup  ## Run mypy
 	$(BIN)/mypy
 
-reproduce: data  ## Regenerate every figure and metric in reports/
+reproduce: data  ## Regenerate every figure, metric and the demo page
 	$(BIN)/python scripts/reproduce_all.py
+
+assets: reproduce  ## Copy the two README figures into docs/assets for committing
+	@cp reports/figures/trust_gap_pooled.png docs/assets/
+	@cp reports/figures/explanation_checks.png docs/assets/
+	@echo "Copied. Generated artefacts are otherwise git-ignored; these two are"
+	@echo "committed on purpose so the README renders on GitHub. Re-run and commit"
+	@echo "whenever the headline numbers change."
+
+app: reproduce  ## Regenerate everything, then open the single-case demo page
+	@open reports/app/index.html 2>/dev/null || \
+	 xdg-open reports/app/index.html 2>/dev/null || \
+	 echo "Open reports/app/index.html in a browser."
+
+.PHONY: app
 
 all: lint typecheck test reproduce  ## Everything, in the order CI would run it
 

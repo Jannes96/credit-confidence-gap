@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import platform
 import sys
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -23,7 +24,13 @@ import numpy as np
 import sklearn
 
 from credit_confidence_gap import __version__
-from credit_confidence_gap.config import FIGURES_DIR, METRICS_DIR, Config
+from credit_confidence_gap.app import (
+    CaseView,
+    band_for,
+    choose_case,
+    write_case_page,
+)
+from credit_confidence_gap.config import APP_DIR, FIGURES_DIR, METRICS_DIR, Config
 from credit_confidence_gap.data.download import DATA_SHA256, DATASET_URL, download_raw
 from credit_confidence_gap.data.loader import data_card, load_dataset
 from credit_confidence_gap.data.splits import DataSplits, make_splits
@@ -34,6 +41,7 @@ from credit_confidence_gap.evaluation.calibration import (
     pool_trust_gap,
     trust_gap_table,
 )
+from credit_confidence_gap.evaluation.costs import optimise_threshold
 from credit_confidence_gap.evaluation.discrimination import discrimination_metrics
 from credit_confidence_gap.evaluation.null_model import NullComparison, pooled_trust_gap_null
 from credit_confidence_gap.evaluation.report import ModelEvaluation, evaluate_model, write_json
@@ -167,6 +175,68 @@ class StabilitySweep:
     test_probabilities: dict[str, list[np.ndarray]]
 
 
+def build_case_view(
+    model: CreditModel,
+    splits: DataSplits,
+    stability: StabilityReport,
+    bands: Sequence[PooledTrustGapRow],
+    config: Config,
+    path: Path,
+    generated_at: str,
+) -> Path:
+    """Render the single-case demo page from the records this run produced.
+
+    The page is a view, never a second computation: every figure on it is one
+    the reproduction already wrote to ``reports/metrics/``. Rendering it here,
+    inside the same run, is what guarantees that — a separately launched app
+    could drift from the reported results without anyone noticing.
+
+    Args:
+        model: The fitted model whose decision is shown.
+        splits: The three partitions; the case is drawn from test.
+        stability: Explanation stability for this model.
+        bands: Pooled trust-gap rows, empty when the stability run was skipped.
+        config: Full project configuration.
+        path: Destination file.
+        generated_at: Timestamp of this run.
+
+    Returns:
+        The path written.
+
+    """
+    probabilities = model.predict_proba_bad(splits.X_test)
+    threshold = optimise_threshold(
+        np.asarray(splits.y_calibration),
+        model.predict_proba_bad(splits.X_calibration),
+        config.cost,
+    )
+    background = splits.X_train.sample(
+        min(config.explanation.n_background, len(splits.X_train)),
+        random_state=config.explanation.random_state,
+    )
+    attributions = explain(model, splits.X_test, background, config.explanation)
+
+    index = choose_case(probabilities)
+    view = CaseView(
+        case_id=int(splits.X_test.index[index]),
+        features=splits.X_test.iloc[index],
+        probability=float(probabilities[index]),
+        threshold=threshold.threshold,
+        threshold_result=threshold,
+        cost=config.cost,
+        attributions=attributions.values[index],
+        feature_names=attributions.feature_names,
+        band=band_for(float(probabilities[index]), bands) if bands else None,
+        stability=stability,
+        model_name=model.name,
+        refit_intervals={
+            name: stability.case_interval(index, position)
+            for position, name in enumerate(attributions.feature_names)
+        },
+    )
+    return write_case_page(view, path, generated_at=generated_at)
+
+
 def run_stability(config: Config) -> StabilitySweep:
     """Refit and re-evaluate across many random three-way splits.
 
@@ -290,9 +360,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--metrics-dir", type=Path, default=METRICS_DIR, help="Where to write metrics."
     )
+    parser.add_argument(
+        "--app-dir", type=Path, default=APP_DIR, help="Where to write the demo page."
+    )
     args = parser.parse_args(argv)
 
     config = Config()
+    timestamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
 
     _print_header("1. Data")
     raw = download_raw()
@@ -434,6 +508,7 @@ def main(argv: list[str] | None = None) -> int:
         )
     )
 
+    pooled_bands: dict[str, tuple[PooledTrustGapRow, ...]] = {}
     if not args.skip_stability:
         _print_header("8. Stability across seeds")
         sweep = run_stability(config)
@@ -456,6 +531,7 @@ def main(argv: list[str] | None = None) -> int:
             "interval on the pooled count would be too narrow.\n"
         )
         pooled_gap = pool_and_test_trust_gap(sweep, config)
+        pooled_bands = {name: rows for name, (rows, _) in pooled_gap.items()}
         for name, (rows, nulls) in pooled_gap.items():
             print(f"  {name}")
             for row in rows:
@@ -508,10 +584,26 @@ def main(argv: list[str] | None = None) -> int:
         args.metrics_dir / "step2.json",
     )
 
-    _print_header("9. Written artefacts")
+    _print_header("9. Single-case demo page")
+    first = models[0]
+    page = build_case_view(
+        first,
+        splits,
+        explanation_stability[first.name],
+        pooled_bands.get(first.name, ()),
+        config,
+        args.app_dir / "index.html",
+        timestamp,
+    )
+    written.append(page)
+    print(f"  {page}")
+    if not pooled_bands:
+        print("  (run without --skip-stability to populate the confidence-band panel)")
+
+    _print_header("10. Written artefacts")
     write_json(
         {
-            "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "generated_at": timestamp,
             "package_version": __version__,
             "python": platform.python_version(),
             "numpy": np.__version__,
