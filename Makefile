@@ -39,9 +39,9 @@ assets: reproduce  ## Copy the two README figures into docs/assets for committin
 	@echo "whenever the headline numbers change."
 
 app: reproduce  ## Regenerate everything, then open the single-case demo page
-	@open reports/app/index.html 2>/dev/null || \
-	 xdg-open reports/app/index.html 2>/dev/null || \
-	 echo "Open reports/app/index.html in a browser."
+	@open docs/demo/index.html 2>/dev/null || \
+	 xdg-open docs/demo/index.html 2>/dev/null || \
+	 echo "Open docs/demo/index.html in a browser."
 
 .PHONY: app
 

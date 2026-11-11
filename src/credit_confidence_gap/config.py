@@ -21,7 +21,13 @@ PROCESSED_DIR: Path = DATA_DIR / "processed"
 REPORTS_DIR: Path = PROJECT_ROOT / "reports"
 FIGURES_DIR: Path = REPORTS_DIR / "figures"
 METRICS_DIR: Path = REPORTS_DIR / "metrics"
-APP_DIR: Path = REPORTS_DIR / "app"
+
+DOCS_DIR: Path = PROJECT_ROOT / "docs"
+# The demo page is published, not merely generated: GitHub Pages serves this
+# directory straight from the branch, so no build workflow is needed. That is
+# also why it sits here rather than under reports/, which stays entirely
+# generated-and-ignored.
+DEMO_DIR: Path = DOCS_DIR / "demo"
 
 
 @dataclass(frozen=True)

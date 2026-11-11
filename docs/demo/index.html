@@ -39,7 +39,10 @@
     color: var(--muted); font-weight: 600;
   }
   .sum-digest { font-size: 13px; color: var(--ink); }
-  details.applicant table { padding: 6px 20px 16px; }
+  /* The padding goes on a wrapper, not on the table: a table with
+     border-collapse: collapse ignores its own padding, which left the rows
+     running flush to the card edge. */
+  .applicant-body { padding: 8px 20px 16px; }
   .conclusion { margin-top: 20px; }
   .ledger { margin-bottom: 14px; }
   .ledger th {
@@ -144,7 +147,7 @@
     <span class="sum-label">Application 6</span>
     <span class="sum-digest">39 · 3 398 DM · 8 months · rent</span>
   </summary>
-  <table><tr><td>status</td><td class='val'>no checking account</td></tr><tr><td>duration</td><td class='val'>8 months</td></tr><tr><td>credit history</td><td class='val'>all credits at this bank paid back duly</td></tr><tr><td>purpose</td><td class='val'>others</td></tr><tr><td>amount</td><td class='val'>3 398 DM</td></tr><tr><td>savings</td><td class='val'>unknown / no savings account</td></tr><tr><td>employment duration</td><td class='val'>4 &lt;= ... &lt; 7 yrs</td></tr><tr><td>installment rate</td><td class='val'>&gt;= 35</td></tr><tr><td>personal status sex</td><td class='val'>male : married/widowed</td></tr><tr><td>other debtors</td><td class='val'>none</td></tr><tr><td>present residence</td><td class='val'>&gt;= 7 yrs</td></tr><tr><td>property</td><td class='val'>unknown / no property</td></tr><tr><td>age</td><td class='val'>39</td></tr><tr><td>other installment plans</td><td class='val'>none</td></tr><tr><td>housing</td><td class='val'>rent</td></tr><tr><td>number credits</td><td class='val'>2-3</td></tr><tr><td>job</td><td class='val'>unskilled - resident</td></tr><tr><td>people liable</td><td class='val'>0 to 2</td></tr><tr><td>telephone</td><td class='val'>no</td></tr><tr><td>foreign worker</td><td class='val'>yes</td></tr></table>
+  <div class="applicant-body"><table><tr><td>status</td><td class='val'>no checking account</td></tr><tr><td>duration</td><td class='val'>8 months</td></tr><tr><td>credit history</td><td class='val'>all credits at this bank paid back duly</td></tr><tr><td>purpose</td><td class='val'>others</td></tr><tr><td>amount</td><td class='val'>3 398 DM</td></tr><tr><td>savings</td><td class='val'>unknown / no savings account</td></tr><tr><td>employment duration</td><td class='val'>4 &lt;= ... &lt; 7 yrs</td></tr><tr><td>installment rate</td><td class='val'>&gt;= 35</td></tr><tr><td>personal status sex</td><td class='val'>male : married/widowed</td></tr><tr><td>other debtors</td><td class='val'>none</td></tr><tr><td>present residence</td><td class='val'>&gt;= 7 yrs</td></tr><tr><td>property</td><td class='val'>unknown / no property</td></tr><tr><td>age</td><td class='val'>39</td></tr><tr><td>other installment plans</td><td class='val'>none</td></tr><tr><td>housing</td><td class='val'>rent</td></tr><tr><td>number credits</td><td class='val'>2-3</td></tr><tr><td>job</td><td class='val'>unskilled - resident</td></tr><tr><td>people liable</td><td class='val'>0 to 2</td></tr><tr><td>telephone</td><td class='val'>no</td></tr><tr><td>foreign worker</td><td class='val'>yes</td></tr></table></div>
 </details>
 
 <div class="grid">
@@ -182,39 +185,7 @@
       </p>
     </div>
     
-    
-      <div class="qualifier warn">
-        <div class="q-head">What confidence at this level has been worth</div>
-        <div class="q-figures">
-          <div><span class="q-num">94.4%</span>
-               <span class="q-cap">stated, on average</span></div>
-          <div class="q-arrow">→</div>
-          <div><span class="q-num">92.4%</span>
-               <span class="q-cap">actually correct</span></div>
-        </div>
-        <p>
-          Across <b>1 018</b> past cases in the
-          90%–100% confidence band, this model
-          overstates its certainty by
-          <b>2.0&nbsp;percentage&nbsp;points</b>
-          (95&nbsp;% interval +0.003 to +0.037).
-          That gap is larger than measurement noise.
-        </p>
-        
-    <div class="array">
-      <svg viewBox="0 0 72 72" role="img"
-           aria-label="92 of 100 correct, 8 wrong"><rect x="0.0" y="0.0" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="7.4" y="0.0" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="14.8" y="0.0" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="22.2" y="0.0" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="29.6" y="0.0" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="37.0" y="0.0" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="44.4" y="0.0" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="51.8" y="0.0" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="59.2" y="0.0" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="66.6" y="0.0" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="0.0" y="7.4" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="7.4" y="7.4" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="14.8" y="7.4" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="22.2" y="7.4" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="29.6" y="7.4" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="37.0" y="7.4" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="44.4" y="7.4" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="51.8" y="7.4" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="59.2" y="7.4" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="66.6" y="7.4" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="0.0" y="14.8" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="7.4" y="14.8" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="14.8" y="14.8" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="22.2" y="14.8" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="29.6" y="14.8" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="37.0" y="14.8" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="44.4" y="14.8" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="51.8" y="14.8" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="59.2" y="14.8" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="66.6" y="14.8" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="0.0" y="22.2" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="7.4" y="22.2" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="14.8" y="22.2" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="22.2" y="22.2" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="29.6" y="22.2" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="37.0" y="22.2" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="44.4" y="22.2" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="51.8" y="22.2" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="59.2" y="22.2" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="66.6" y="22.2" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="0.0" y="29.6" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="7.4" y="29.6" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="14.8" y="29.6" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="22.2" y="29.6" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="29.6" y="29.6" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="37.0" y="29.6" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="44.4" y="29.6" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="51.8" y="29.6" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="59.2" y="29.6" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="66.6" y="29.6" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="0.0" y="37.0" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="7.4" y="37.0" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="14.8" y="37.0" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="22.2" y="37.0" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="29.6" y="37.0" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="37.0" y="37.0" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="44.4" y="37.0" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="51.8" y="37.0" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="59.2" y="37.0" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="66.6" y="37.0" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="0.0" y="44.4" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="7.4" y="44.4" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="14.8" y="44.4" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="22.2" y="44.4" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="29.6" y="44.4" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="37.0" y="44.4" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="44.4" y="44.4" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="51.8" y="44.4" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="59.2" y="44.4" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="66.6" y="44.4" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="0.0" y="51.8" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="7.4" y="51.8" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="14.8" y="51.8" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="22.2" y="51.8" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="29.6" y="51.8" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="37.0" y="51.8" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="44.4" y="51.8" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="51.8" y="51.8" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="59.2" y="51.8" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="66.6" y="51.8" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="0.0" y="59.2" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="7.4" y="59.2" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="14.8" y="59.2" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="22.2" y="59.2" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="29.6" y="59.2" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="37.0" y="59.2" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="44.4" y="59.2" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="51.8" y="59.2" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="59.2" y="59.2" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="66.6" y="59.2" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="0.0" y="66.6" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="7.4" y="66.6" width="5.2" height="5.2" rx="2.6" fill="#ccd2d8"/><rect x="14.8" y="66.6" width="5.2" height="5.2" rx="2.6" fill="#9a6b12"/><rect x="22.2" y="66.6" width="5.2" height="5.2" rx="2.6" fill="#9a6b12"/><rect x="29.6" y="66.6" width="5.2" height="5.2" rx="2.6" fill="#9a6b12"/><rect x="37.0" y="66.6" width="5.2" height="5.2" rx="2.6" fill="#9a6b12"/><rect x="44.4" y="66.6" width="5.2" height="5.2" rx="2.6" fill="#9a6b12"/><rect x="51.8" y="66.6" width="5.2" height="5.2" rx="2.6" fill="#9a6b12"/><rect x="59.2" y="66.6" width="5.2" height="5.2" rx="2.6" fill="#9a6b12"/><rect x="66.6" y="66.6" width="5.2" height="5.2" rx="2.6" fill="#9a6b12"/></svg>
-      <div class="array-key">
-        <div><span class="sw" style="background:#ccd2d8"></span>
-             <b>92</b> judged correctly</div>
-        <div><span class="sw" style="background:#9a6b12"></span>
-             <b>8</b> got wrong</div>
-        <p>Out of 100 past applicants the model was this confident about.</p>
-      </div>
-    </div>
-    
-      </div>
-    
+    <p class="muted">Run the full reproduction (without <code>--skip-stability</code>) to populate this panel.</p>
   </section>
 
   <section class="card">
@@ -264,7 +235,7 @@
           </tr>
           <tr>
             <td><b>94% confident</b> in that call</td>
-            <td>In this confidence band it has been right 92.4% of the time — wrong about 8 applicants in 100. The overstatement is small but larger than
+            <td>The band evidence is not available in this run. The overstatement is small but larger than
                 measurement noise, and it sits in the highest confidence band —
                 exactly where a reader is least likely to check.</td>
           </tr>
@@ -308,7 +279,7 @@
   sample, not against any lending population, and is not a default rate.
   No decision about a real person should be derived from it.
   <br><br>
-  Generated 2026-11-11T15:20:55+00:00 by <code>make reproduce</code>.
+  Generated 2026-11-11T16:01:15+00:00 by <code>make reproduce</code>.
   Every figure on this page is read from <code>reports/metrics/</code>;
   the page computes nothing of its own.
 </footer>

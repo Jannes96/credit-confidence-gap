@@ -30,7 +30,7 @@ from credit_confidence_gap.app import (
     choose_case,
     write_case_page,
 )
-from credit_confidence_gap.config import APP_DIR, FIGURES_DIR, METRICS_DIR, Config
+from credit_confidence_gap.config import DEMO_DIR, FIGURES_DIR, METRICS_DIR, Config
 from credit_confidence_gap.data.download import DATA_SHA256, DATASET_URL, download_raw
 from credit_confidence_gap.data.loader import data_card, load_dataset
 from credit_confidence_gap.data.splits import DataSplits, make_splits
@@ -361,7 +361,7 @@ def main(argv: list[str] | None = None) -> int:
         "--metrics-dir", type=Path, default=METRICS_DIR, help="Where to write metrics."
     )
     parser.add_argument(
-        "--app-dir", type=Path, default=APP_DIR, help="Where to write the demo page."
+        "--app-dir", type=Path, default=DEMO_DIR, help="Where to write the demo page."
     )
     args = parser.parse_args(argv)
 

@@ -502,7 +502,10 @@ def render_case_page(view: CaseView, *, generated_at: str) -> str:
     color: var(--muted); font-weight: 600;
   }}
   .sum-digest {{ font-size: 13px; color: var(--ink); }}
-  details.applicant table {{ padding: 6px 20px 16px; }}
+  /* The padding goes on a wrapper, not on the table: a table with
+     border-collapse: collapse ignores its own padding, which left the rows
+     running flush to the card edge. */
+  .applicant-body {{ padding: 8px 20px 16px; }}
   .conclusion {{ margin-top: 20px; }}
   .ledger {{ margin-bottom: 14px; }}
   .ledger th {{
@@ -607,7 +610,7 @@ def render_case_page(view: CaseView, *, generated_at: str) -> str:
     <span class="sum-label">Application {view.case_id}</span>
     <span class="sum-digest">{digest}</span>
   </summary>
-  <table>{rows}</table>
+  <div class="applicant-body"><table>{rows}</table></div>
 </details>
 
 <div class="grid">

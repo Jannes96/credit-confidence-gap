@@ -5,9 +5,10 @@ data/processed/*
 !data/**/.gitkeep
 
 # Generated artefacts are reproducible via `make reproduce` and stay out of
-# git. The two exceptions live in docs/assets/ and are copied there by
-# `make assets`: a README that renders nothing on GitHub is a README nobody
-# reads, and that is worth one narrow, explicit exception.
+# git. Deliberately published ones live under docs/ instead: docs/assets/ holds
+# the two figures the README embeds (copied by `make assets`), and docs/demo/
+# holds the single-case page, which GitHub Pages serves straight from the
+# branch. A README that renders nothing on GitHub is a README nobody reads.
 reports/figures/*
 reports/metrics/*
 !reports/**/.gitkeep
