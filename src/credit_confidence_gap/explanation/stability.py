@@ -20,7 +20,7 @@ to the model refit and not to a change of question.
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
@@ -82,10 +82,41 @@ class StabilityReport:
     global_rank_correlation: float
     relative_spread: float
     per_feature_spread: dict[str, float]
+    refit_attributions: np.ndarray
 
     def as_dict(self) -> dict[str, object]:
-        """Return a serialisable dictionary."""
-        return asdict(self)
+        """Return a serialisable dictionary, without the raw refit stack.
+
+        Built field by field rather than with ``asdict``, which would deep-copy
+        the refit array — a hundred thousand floats — only to discard it.
+        """
+        return {
+            "model_name": self.model_name,
+            "n_refits": self.n_refits,
+            "top_k": self.top_k,
+            "top_k_jaccard": self.top_k_jaccard,
+            "random_jaccard": self.random_jaccard,
+            "sign_agreement": self.sign_agreement,
+            "top_feature_agreement": self.top_feature_agreement,
+            "random_top_feature_agreement": self.random_top_feature_agreement,
+            "global_rank_correlation": self.global_rank_correlation,
+            "relative_spread": self.relative_spread,
+            "per_feature_spread": dict(self.per_feature_spread),
+        }
+
+    def case_interval(self, case: int, feature: int) -> tuple[float, float]:
+        """Range of one feature's contribution for one case across refits.
+
+        Args:
+            case: Positional index into the explained cases.
+            feature: Positional index into the codebook features.
+
+        Returns:
+            ``(minimum, maximum)`` contribution on the log-odds scale.
+
+        """
+        values = self.refit_attributions[:, case, feature]
+        return float(values.min()), float(values.max())
 
     def __str__(self) -> str:
         """One-line summary suitable for console output."""
@@ -232,4 +263,5 @@ def assess_stability(
                 key=lambda item: -item[1],
             )
         ),
+        refit_attributions=stacked,
     )
